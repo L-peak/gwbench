@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this software or the gwbench benchmark, please cite it as below."
+title: "gwbench: A Reproducible Benchmark for Groundwater-Level Forecasting"
+abstract: "A reproducible benchmark for daily groundwater-level forecasting using public USGS NWIS data, with persistence baselines, a residual GRU, per-site persistence blending, and missing-data stress tests."
+authors:
+  - family-names: Li
+    given-names: Zhaoyang
+    affiliation: "Henan Polytechnic University"
+    email: 3286533389@qq.com
+version: 0.1.0
+date-released: 2026-10-29
+license: MIT
+repository-code: "https://github.com/L-peak/gwbench"
+doi: "10.5281/zenodo.[Zenodo-ID]"
+keywords:
+  - groundwater
+  - machine learning
+  - benchmark
+  - persistence
+  - forecasting
+  - reproducibility

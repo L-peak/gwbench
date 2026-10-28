@@ -1,0 +1,29 @@
+{
+  "title": "gwbench: A Reproducible Benchmark for Groundwater-Level Forecasting",
+  "description": "A reproducible benchmark for daily groundwater-level forecasting built from public USGS NWIS data. The release contains the gwbench Python package, data download and processing scripts, processed daily panels (279 wells; 74-well clean core), persistence and model results, manuscript source and figures, and reproducibility instructions. Raw observations are available from the USGS National Water Information System.",
+  "creators": [
+    {
+      "name": "Li, Zhaoyang",
+      "affiliation": "Henan Polytechnic University",
+      "email": "3286533389@qq.com"
+    }
+  ],
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "MIT",
+  "keywords": [
+    "groundwater",
+    "machine learning",
+    "benchmark",
+    "persistence",
+    "forecasting",
+    "reproducibility"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/L-peak/gwbench",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}
