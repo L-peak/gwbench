@@ -31,7 +31,7 @@ plt.rcParams.update(
         "font.size": 9,
         "axes.spines.top": False,
         "axes.spines.right": False,
-        "figure.dpi": 160,
+        "figure.dpi": 300,
         "savefig.bbox": "tight",
     }
 )
