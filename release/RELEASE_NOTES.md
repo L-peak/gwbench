@@ -42,4 +42,5 @@ The exact Kaggle configuration used for the paper is in
 ## License
 
 Code: MIT (see `LICENSE`). Derived panels: CC BY 4.0. Raw USGS data: public
-domain. If you use this release, cite the manuscript and the Zenodo DOI.
+domain. If you use this release, cite the manuscript and the Zenodo DOI:
+https://doi.org/10.5281/zenodo.23749304

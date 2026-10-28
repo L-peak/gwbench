@@ -1,7 +1,12 @@
 # gwbench
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23749304.svg)](https://doi.org/10.5281/zenodo.23749304)
+
 Reproducible benchmarks for groundwater-level machine learning, built on
 public USGS Water Data.
+
+**Repository:** https://github.com/L-peak/gwbench
+**Archived release:** https://doi.org/10.5281/zenodo.23749304
 
 ## Status
 
