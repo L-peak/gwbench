@@ -372,9 +372,10 @@ Horizon & Model & NSE mean & NSE median & KGE mean & KGE median \\
 
 \subsection{Ridge baseline}
 
-A per-site ridge regression with lag and rolling features (last value, 7/30/90/
-365-day means and standard deviations, and day-of-year terms; no linear time
-trend) was evaluated on exactly the same test anchors as the GRU (Table~\ref{tab:models}).
+A per-site ridge regression with lag and rolling features (last value; 7-, 30-,
+90-, and 365-day rolling means and standard deviations; day-of-year terms; no
+linear time trend) was evaluated on exactly the same test anchors as the GRU
+(Table~\ref{tab:models}).
 It achieved median NSE 0.780 at 30 days and 0.304 at 90 days, compared with
 persistence 0.729 and $-0.181$. Its mean NSE was 0.264 at 30 days and $-1.688$
 at 90 days, showing that even a linear model can be dominated by a few trending
@@ -572,7 +573,7 @@ the anchor protocol (Table~\ref{tab:panelsensitivity}). Screening changes
 baseline skill. At 90 days, persistence mean NSE is $-3.08$ on the full panel,
 $-0.27$ on the core, and $-0.22$ on the clean core; the corresponding medians
 are $-0.20$, $-0.42$, and $-0.18$. The clean core therefore has the strongest
-persistence baseline, not the weakest. Ridge shows the same pattern in the
+90-day persistence baseline, not the weakest. Ridge shows the same pattern in the
 median: its 90-day median NSE is 0.175 on the full panel, 0.265 on the core,
 and 0.304 on the clean core, although its mean remains strongly negative on
 all panels ($-22.97$, $-1.58$, and $-1.69$). The GRU was trained only on the
@@ -668,8 +669,9 @@ KGE, and median KGE across seeds, although mean NSE and mean KGE have
 confidence intervals that include zero and one well drives much of the mean
 behavior. The state-level table and the per-site win/loss counts reinforce a
 more nuanced reading: the 90-day result is a distributional improvement
-(median and KGE) rather than a uniform mean gain. At 90 days, 55/73 wells
-improve on NSE but 13 worsen; the mean is dominated by a few wells. We
+(median and KGE) rather than a uniform mean gain. At 90 days, 54/73 wells
+improve on NSE, 13 worsen, and 6 are unchanged; the mean is dominated by a few
+wells. We
 therefore recommend that benchmark users report the full distribution, not
 only a mean. The ridge comparison makes the point concrete: ridge has the
 better median at both horizons but far worse mean errors, so neither model
