@@ -33,7 +33,8 @@ numbers refer to the revised manuscript.
    hexbin panels. Table 1 distinguishes the full, screened-core, and clean-core
    panels, and the main text states that the clean core is the primary set.
 6. **References.** We added two recent groundwater ML references
-   \citep{khan2023,dey2025} and verified all DOIs against Crossref.
+   (Khan et al., 2023; Dey and Singh, 2025) and verified all DOIs against
+   Crossref.
 
 ## Reviewer 1
 
