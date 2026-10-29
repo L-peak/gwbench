@@ -87,14 +87,14 @@ def fig_study_map() -> None:
 def fig_examples() -> None:
     panel = pd.read_parquet(PROJECT_ROOT / "data/processed/panel_full.parquet")
     examples = [
-        ("404618098504401", "Clean record (NE)"),
-        ("315712106361803", "Frequent jumps (TX)"),
-        ("340615117170902", "Large late gap (CA)"),
+        ("404618098504401", "Clean record (NE)", "#16a34a"),
+        ("315712106361803", "Frequent jumps (TX)", "#ea580c"),
+        ("340615117170902", "Large late gap (CA)", "#2563eb"),
     ]
     fig, axes = plt.subplots(3, 1, figsize=(7.2, 6.0), sharex=True)
-    for ax, (site, title) in zip(axes, examples):
+    for ax, (site, title, color) in zip(axes, examples):
         group = panel[panel["site_no"].astype(str) == site].sort_values("date")
-        ax.plot(group["date"], group["value"], color="#1f2937", linewidth=0.8)
+        ax.plot(group["date"], group["value"], color=color, linewidth=0.8)
         ax.set_ylabel("Depth to water (ft)")
         ax.set_title(f"{site}: {title}", fontsize=9, loc="left")
         ax.grid(alpha=0.2)
