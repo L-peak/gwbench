@@ -21,8 +21,9 @@ global residual GRU actually beats persistence. The main findings are:
   both horizons, but much heavier mean-error tails. The GRU's independent
   contribution is fewer severe failures than the raw GRU and ridge, not
   median supremacy; persistence remains the most conservative tail baseline.
-- A fixed global blending weight is worse than persistence; a per-site
-  validation-fitted weight is essential.
+- A fixed global blending weight does not reproduce the per-site gain and is
+  worse than persistence in mean NSE; a per-site validation-fitted weight is
+  essential.
 - Missing-input robustness is horizon-dependent: at 30 days, 50% masking
   pushes mean NSE below persistence; at 90 days, masking does not degrade
   performance (five repeated mask draws).
