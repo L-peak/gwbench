@@ -219,8 +219,8 @@ failure modes.
 ## Note on new experiments
 
 No new USGS data were downloaded. All new analyses use the existing processed
-panels and saved model predictions. The training seeds remain 1-3; the missing
-stress test adds five mask seeds; the cross-panel ridge uses a vectorized
-per-site implementation. The full-panel ridge result is reported with 246/245
-wells because the remaining wells lack sufficient training or test anchors;
-this is stated in the table caption.
+panels and the six purged retrained models (30/90 days x seeds 1-3). The
+missing stress test adds five mask seeds; the cross-panel ridge uses a
+vectorized per-site implementation. The full-panel ridge result is reported
+with 246/245 wells because the remaining wells lack sufficient training or
+test anchors; this is stated in the table caption.
