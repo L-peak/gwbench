@@ -14,11 +14,16 @@ global residual GRU actually beats persistence. The main findings are:
   day); a calibrated residual GRU is statistically tied with persistence at
   30 days.
 - At 90 days, the calibrated model improves median NSE from -0.18 to 0.27
-  and mean KGE from 0.46 to 0.51 across three seeds.
-- A per-site validation-fitted persistence blending weight is essential:
-  the uncalibrated GRU fails catastrophically on low-variance wells.
-- The calibrated model is stable when 10-50% of input observations are
-  masked.
+  (paired median gain 0.115, 95% CI 0.033-0.207) and mean KGE from 0.46 to
+  0.51; mean NSE and mean KGE intervals include zero because one well
+  dominates the mean.
+- A simple per-site ridge baseline has a higher median NSE than the GRU at
+  both horizons, but much heavier mean-error tails. The GRU's independent
+  contribution is tail robustness, not median supremacy.
+- A fixed global blending weight is worse than persistence; a per-site
+  validation-fitted weight is essential.
+- Missing-input results are stable at 0/10/30/50% masking with five repeated
+  mask draws.
 
 We believe this fits Computers & Geosciences because it is a benchmark and
 software contribution rather than another architecture paper: it provides an

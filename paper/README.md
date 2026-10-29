@@ -11,15 +11,25 @@ pdflatex main.tex
 pdflatex main.tex
 ```
 
-The compiled draft is `main.pdf`.
+The compiled manuscript is `main.pdf`; `main_round2.pdf` is the round-2
+review revision. The response letter for the second review is
+`response_to_reviewers_round2.pdf`.
+
+## Revision files
+
+- `response_to_reviewers.md` / `.pdf` - response to the first review round
+- `response_to_reviewers_round2.md` / `.pdf` - response to the second review
+- `highlights.txt` - journal highlights
+- `cover_letter.md` - submission cover letter
+- `submission_checklist.md` - pre-submission checks
+- `figures/fig1..fig8` - manuscript figures (300 dpi)
+- `zenodo_doi.txt` - archived release DOI
 
 ## Before submission
 
-- Replace `[Author One]`, `[Affiliation]`, `[email]`.
-- Replace `[repository URL]`, `[Zenodo DOI]`, `[Kaggle URL]`.
-- Fill the acknowledgements.
-- Verify every citation in `refs.bib` against the published record.
-- Check the journal's current guide for authors (highlights, graphical
+- Verify the journal's current guide for authors (highlights, graphical
   abstract, declaration sections).
-- Consider adding the cross-site / leave-well-out experiment as a
-  supplementary section if time allows.
+- Confirm the Zenodo archive and Kaggle notebook links are public.
+- Recheck that the PDF text extracts correctly (ligatures are disabled).
+- Keep the five-mask missing-data and cross-panel result files with the
+  submission package.

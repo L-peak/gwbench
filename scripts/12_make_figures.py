@@ -249,20 +249,38 @@ def fig_alpha() -> None:
 def fig_missingness() -> None:
     fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.2))
     for horizon, color in ((30, "#2563eb"), (90, "#ea580c")):
-        path = PROJECT_ROOT / f"data/processed/missing_stress_h{horizon}.csv"
-        df = pd.read_csv(path)
-        axes[0].plot(
-            df["mask_fraction"] * 100,
-            df["y_pred_nse_mean"],
-            "-o",
+        paths = sorted(
+            (PROJECT_ROOT / "data/processed").glob(f"missing_h{horizon}_mask*.csv")
+        )
+        if not paths:
+            continue
+        data = pd.concat([pd.read_csv(path) for path in paths], ignore_index=True)
+        grouped = (
+            data.groupby("mask_fraction")["y_pred_nse_mean"]
+            .agg(["mean", "std"])
+            .reset_index()
+        )
+        grouped_kge = (
+            data.groupby("mask_fraction")["y_pred_kge_mean"]
+            .agg(["mean", "std"])
+            .reset_index()
+        )
+        axes[0].errorbar(
+            grouped["mask_fraction"] * 100,
+            grouped["mean"],
+            yerr=grouped["std"].fillna(0.0),
+            fmt="-o",
             color=color,
+            capsize=2,
             label=f"{horizon} days",
         )
-        axes[1].plot(
-            df["mask_fraction"] * 100,
-            df["y_pred_kge_mean"],
-            "-o",
+        axes[1].errorbar(
+            grouped_kge["mask_fraction"] * 100,
+            grouped_kge["mean"],
+            yerr=grouped_kge["std"].fillna(0.0),
+            fmt="-o",
             color=color,
+            capsize=2,
             label=f"{horizon} days",
         )
     axes[0].set_xlabel("Masked input observations (%)")
@@ -272,10 +290,120 @@ def fig_missingness() -> None:
     axes[1].set_ylabel("KGE mean")
     axes[1].set_title("KGE under missing inputs", fontsize=9)
     for ax in axes:
+        ax.set_xticks([0, 10, 30, 50])
         ax.grid(alpha=0.2)
         ax.legend(fontsize=7, frameon=False)
     fig.tight_layout()
     fig.savefig(FIG_DIR / "fig6_missingness.png")
+    plt.close(fig)
+
+
+def fig_per_site() -> None:
+    panel = pd.read_parquet(
+        PROJECT_ROOT / "data/processed/panel_core_clean.parquet",
+        columns=["site_no", "state_cd"],
+    ).drop_duplicates("site_no")
+    state_map = dict(zip(panel["site_no"].astype(str), panel["state_cd"].astype(str)))
+    colors = {"ca": "#2563eb", "ne": "#16a34a", "tx": "#ea580c"}
+
+    fig, axes = plt.subplots(2, 2, figsize=(7.2, 6.0))
+    for row, horizon in enumerate((30, 90)):
+        frames = []
+        for seed in (1, 2, 3):
+            path = (
+                PROJECT_ROOT
+                / "dist/kaggle_results_seeds"
+                / f"gru_h{horizon}_seed{seed}"
+                / "test_metrics_per_site.csv"
+            )
+            frames.append(pd.read_csv(path, dtype={"site_no": str}))
+        data = pd.concat(frames, ignore_index=True)
+        data = (
+            data.groupby("site_no", as_index=False)[
+                ["y_pred_nse", "persistence_nse"]
+            ]
+            .mean()
+            .copy()
+        )
+        data["delta_nse"] = data["y_pred_nse"] - data["persistence_nse"]
+        data["state"] = data["site_no"].map(state_map).fillna("other")
+
+        ax = axes[row, 0]
+        for state, group in data.groupby("state"):
+            ax.scatter(
+                group["persistence_nse"],
+                group["y_pred_nse"],
+                s=18,
+                alpha=0.75,
+                color=colors.get(state, "gray"),
+                edgecolor="white",
+                linewidth=0.3,
+                label=state.upper(),
+            )
+        lower = -2.0 if horizon == 30 else -15.0
+        ax.plot([lower, 1], [lower, 1], color="black", linewidth=0.8)
+        ax.axhline(0, color="gray", linewidth=0.5, alpha=0.5)
+        ax.axvline(0, color="gray", linewidth=0.5, alpha=0.5)
+        ax.set_xscale("symlog", linthresh=1, linscale=1)
+        ax.set_yscale("symlog", linthresh=1, linscale=1)
+        ax.set_xlim(lower, 1)
+        ax.set_ylim(lower, 1)
+        ticks = [-10, -3, -1, 0, 1] if horizon == 90 else [-2, -1, 0, 1]
+        ax.set_xticks(ticks)
+        ax.set_yticks(ticks)
+        ax.set_xticklabels([str(tick) for tick in ticks])
+        ax.set_yticklabels([str(tick) for tick in ticks])
+        ax.minorticks_off()
+        ax.set_xlabel("Persistence NSE")
+        ax.set_ylabel("Calibrated GRU NSE")
+        ax.set_title(f"{horizon}-day forecasts", fontsize=9, loc="left")
+        ax.grid(alpha=0.2)
+        if row == 0:
+            ax.legend(fontsize=6, frameon=False, loc="upper left")
+
+        outlier = data[data["site_no"] == "413156098591201"]
+        if row == 1 and len(outlier):
+            x_out = float(outlier["persistence_nse"].iloc[0])
+            y_out = float(outlier["y_pred_nse"].iloc[0])
+            ax.annotate(
+                f"outlier: {y_out:.1f}",
+                xy=(x_out, y_out),
+                xytext=(x_out + 0.08, y_out * 0.55),
+                fontsize=6,
+                color="#dc2626",
+                arrowprops=dict(arrowstyle="->", color="#dc2626", lw=0.7),
+            )
+
+        ax = axes[row, 1]
+        clipped = data["delta_nse"].clip(-1.0, 1.0)
+        ax.hist(clipped, bins=30, color="#6b7280", alpha=0.75)
+        ax.axvline(0, color="black", linewidth=0.8)
+        ax.axvline(
+            float(data["delta_nse"].median()),
+            color="#dc2626",
+            linestyle="--",
+            linewidth=0.8,
+            label=f"median {float(data['delta_nse'].median()):+.3f}",
+        )
+        ax.set_xlabel("Delta NSE (calibrated - persistence)")
+        ax.set_ylabel("Wells")
+        ax.set_title("Per-site NSE change", fontsize=9, loc="left")
+        ax.grid(alpha=0.2)
+        ax.legend(fontsize=6, frameon=False, loc="upper left")
+        n_out = int((data["delta_nse"].abs() > 1.0).sum())
+        if n_out:
+            ax.text(
+                0.98,
+                0.70,
+                f"{n_out} wells outside ±1",
+                transform=ax.transAxes,
+                ha="right",
+                fontsize=6,
+                color="#dc2626",
+            )
+
+    fig.tight_layout()
+    fig.savefig(FIG_DIR / "fig8_per_site.png")
     plt.close(fig)
 
 
@@ -321,6 +449,7 @@ def main() -> None:
     fig_scatter()
     fig_alpha()
     fig_missingness()
+    fig_per_site()
     fig_outlier()
     print(f"Wrote figures to {FIG_DIR}")
     for path in sorted(FIG_DIR.glob("*.png")):

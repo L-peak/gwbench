@@ -5,3 +5,5 @@ pyarrow>=20
 matplotlib>=3.10
 tqdm>=4.67
 pytest>=8
+torch>=2.2
+scikit-learn>=1.4

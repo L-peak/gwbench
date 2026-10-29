@@ -10,19 +10,22 @@ public USGS Water Data.
 
 ## Status
 
-The pilot pipeline runs end to end:
+The pipeline runs end to end on the public USGS panel:
 
 - downloads NWIS site/series catalogs for seven states;
 - selects wells with long daily records;
 - fetches daily values from the modern USGS OGC API;
 - builds a complete daily panel with an observed/missing mask;
-- evaluates persistence and seasonal-naive baselines;
-- runs jump/gap QC checks.
+- evaluates persistence, seasonal-naive, per-site ridge, and global residual
+  GRU baselines on aligned anchors;
+- runs jump/gap QC checks, missing-data stress tests, paired site-level
+  bootstrap intervals, a fusion ablation, and cross-panel sensitivity
+  analyses.
 
-The current pilot uses 6 wells (CA, NE, TX) with 54,792 daily rows. The
-selection logic identifies 282 candidate wells for parameter 72019
-(depth to water) with statistic 00001, at least 3,650 observations, a
-10-year span, and a record extending past 2015.
+The benchmark contains 279 wells (CA, NE, TX) for parameter 72019 (depth to
+water) with statistic 00001, at least 3,650 observations, a 10-year span, and
+a record extending past 2015; 74 wells form the clean core used for the main
+GRU experiments.
 
 ## Important API note
 
@@ -102,6 +105,32 @@ python scripts/07_train_gru.py \
   --stride-train 30 --stride-eval 30 \
   --epochs 2 --batch-size 128 --hidden 16 --layers 1 \
   --out-dir data/processed/gru_smoke
+
+# 9. Ridge evaluated on the exact GRU anchors (memory-bounded for 279 wells)
+python scripts/13_ridge_aligned_fast.py \
+  --panel data/processed/panel_full.parquet \
+  --horizons 30,90 --out data/processed/ridge_aligned_full.csv
+
+# 10. Missing-input stress test, repeated mask draws
+for s in 1 2 3 4 5; do
+  python scripts/11_missing_stress.py \
+    --panel data/processed/panel_core_clean.parquet \
+    --model-dir dist/kaggle_results_seeds/gru_h30_seed1 \
+    --fractions 0,0.1,0.3,0.5 --stride 7 --mask-seed "$s" \
+    --out "data/processed/missing_h30_mask${s}.csv"
+done
+python scripts/16_aggregate_missing.py
+
+# 11. Paired site-level bootstrap
+python scripts/15_bootstrap.py
+
+# 12. Cross-panel persistence / seasonal-naive sensitivity
+python scripts/14_panel_sensitivity.py \
+  --panel data/processed/panel_full.parquet \
+  --out data/processed/panel_sensitivity.csv
+
+# 13. Figures
+python scripts/12_make_figures.py
 ```
 
 USGS requests need network access. In this environment, run the fetch scripts
@@ -118,6 +147,28 @@ with the shell sandbox disabled.
 The full download contains 1,581,853 observed daily values from 2000-2024
 across California, Nebraska, and Texas. Sentinel values (100000.x) were removed
 before panel construction.
+
+## Final benchmark results (clean core, seeds 1-3)
+
+| Horizon | Model | NSE mean | NSE median | KGE mean | KGE median |
+|---|---|---:|---:|---:|---:|
+| 30 d | Persistence | 0.573 | 0.729 | 0.784 | 0.823 |
+| 30 d | Ridge | 0.264 | 0.780 | 0.694 | 0.847 |
+| 30 d | Calibrated GRU | 0.575 | 0.765 | 0.761 | 0.838 |
+| 90 d | Persistence | -0.218 | -0.181 | 0.456 | 0.463 |
+| 90 d | Ridge | -1.688 | 0.304 | 0.380 | 0.622 |
+| 90 d | Calibrated GRU | -0.189 | 0.267 | 0.505 | 0.585 |
+
+Key findings: persistence is statistically tied with the calibrated GRU on
+mean NSE at 30 days; at 90 days the GRU improves median NSE but ridge has an
+even higher median; ridge has much heavier mean-error tails, so the GRU's
+independent contribution is tail robustness, not median supremacy. A fixed
+global blend is worse than persistence; site-specific calibration is
+essential. See `paper/main.pdf` for the complete analysis.
+
+> The historical pilot notes below predate the final 279-well benchmark and
+> are retained only as a development log. Use the final results above and in
+> the manuscript.
 
 ## Pilot findings (2026-10-27)
 

@@ -1,5 +1,5 @@
 - Reproducible USGS benchmark for daily groundwater-level forecasting.
-- Persistence remains a strong baseline at 30 days; deep models tie it.
-- At 90 days, a calibrated residual GRU improves median NSE and KGE.
-- Per-site persistence blending fixes catastrophic low-variance failures.
-- Performance is stable under 10-50% missing input observations.
+- Persistence remains strong at 30 days; a calibrated GRU ties it.
+- At 90 days the GRU improves median NSE, but ridge has a higher median.
+- A fixed blend fails; per-site calibration is the essential ingredient.
+- Stable under 10-50% missing inputs across repeated mask draws.
