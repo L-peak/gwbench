@@ -15,6 +15,6 @@
 - [x] References checked against publisher records
 - [x] Figures at 300 dpi (matplotlib `figure.dpi=300`)
 - [x] Manuscript compiled without errors (22 pages)
-- [ ] `pytest` passes
+- [x] `pytest` passes (13 tests)
 - [ ] Kaggle API token revoked/regenerated after release
 - [x] Round-2 response letter and PDF prepared
