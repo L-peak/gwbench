@@ -170,8 +170,8 @@ horizon:
 | Model | NSE mean | NSE median | KGE mean | KGE median | RMSE mean |
 |---|---:|---:|---:|---:|---:|
 | Persistence | 0.573 | 0.729 | 0.784 | 0.822 | 1.759 |
-| Raw residual GRU | -5.733 | 0.480 | 0.553 | 0.770 | 2.209 |
-| Calibrated GRU | **0.603** | **0.772** | 0.773 | **0.837** | **1.677** |
+| Raw residual GRU (seeds 1-3) | -3.155 | 0.564 | 0.443 | 0.761 | 2.164 |
+| Calibrated GRU (seeds 1-3) | **0.575** | **0.765** | 0.761 | **0.838** | **1.702** |
 
 The raw GRU still fails catastrophically on a few low-variance wells. The
 validation-fitted blending weight fixes this, and the seed-42 run looked
@@ -200,18 +200,19 @@ and the calibrated residual model improves on every aggregate metric:
 | Model | NSE mean | NSE median | KGE mean | KGE median | RMSE mean |
 |---|---:|---:|---:|---:|---:|
 | Persistence | -0.218 | -0.181 | 0.456 | 0.462 | 3.772 |
-| Raw residual GRU | -6.199 | 0.009 | 0.263 | 0.507 | 3.712 |
-| Calibrated GRU | **-0.139** | **0.276** | **0.520** | **0.569** | **3.413** |
+| Raw residual GRU (seeds 1-3) | -14.169 | -0.013 | 0.086 | 0.492 | 4.102 |
+| Calibrated GRU (seeds 1-3) | **-0.189** | **0.267** | **0.505** | **0.585** | **3.491** |
 
-- Calibrated NSE improves at **53/73** wells; KGE at **40/73**.
-- The blending weight is positive for 60/74 wells (median alpha 0.946): at 90
-  days the model is doing most of the work, rather than falling back to
-  persistence.
-- One site (`413156098591201`) dominates the mean: its calibrated NSE is
-  -13.65 while persistence is -0.71. Excluding that single site, the calibrated
-  NSE mean is **+0.048** vs -0.211 for persistence, and KGE mean is 0.538 vs
-  0.457. This is a validation-to-test distribution-shift case worth a
-  discussion paragraph.
+- Calibrated NSE improves at about **50/73** wells and KGE at about **41/73**
+  (seed means).
+- The blending weight is positive for about **63/74** wells on average (range
+  58-67); the median alpha ranges from 0.67 to 0.80 across seeds.
+- One site (`413156098591201`) dominates the mean: its calibrated NSE ranges
+  from -13.27 to -17.33 across seeds while persistence is -0.71. Excluding
+  that single site, the seed-averaged calibrated NSE mean is **+0.013** vs
+  -0.211 for persistence (individual seeds range -0.057 to +0.068), and KGE
+  mean is 0.524 vs 0.457. This is a validation-to-test distribution-shift case
+  worth a discussion paragraph.
 - Absolute NSE near zero reflects how hard 90-day groundwater forecasting is;
   the benchmark's value is the relative improvement over strong baselines, not
   a high absolute score.

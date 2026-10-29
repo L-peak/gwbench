@@ -271,6 +271,19 @@ Horizon & Model & NSE mean & NSE median & KGE mean & KGE median \\
 \end{tabular}}
 \end{table}
 
+\subsection{Ridge baseline}
+
+A per-site ridge regression with lag and rolling features (last value, 7/30/90/
+365-day means and standard deviations, and day-of-year terms; no linear time
+trend) achieved median NSE 0.823 at 30 days and 0.381 at 90 days, compared with
+persistence median NSE 0.739 and $-0.051$ on the same test rows. Its mean NSE
+was 0.236 at 30 days and $-1.486$ at 90 days, showing that even a linear model
+can be dominated by a few trending or low-variance wells. Because the ridge
+baseline uses every observed test day rather than the model's anchor subset,
+its persistence reference values differ slightly from Table~\ref{tab:persistence}.
+We therefore treat median NSE and KGE as the primary comparison and include
+ridge as a secondary learned baseline.
+
 \subsection{90 days: robust median and KGE gains}
 
 At 90 days the calibrated model improves on every aggregate metric
@@ -279,11 +292,13 @@ mean KGE from 0.456 to $0.505 \pm 0.014$, and median KGE from 0.463 to
 $0.585 \pm 0.021$. The NSE win rate is $49.7 \pm 3.8$ of 73 wells and the KGE
 win rate is $41.0 \pm 3.6$ of 73. The mean NSE improvement is smaller and its
 bootstrap interval includes zero because one well
-(\texttt{413156098591201}) undergoes a validation-to-test shift: its calibrated
-NSE is $-13.65$ while persistence is $-0.71$. Excluding that single well, the
-calibrated mean NSE is $+0.048$ versus $-0.211$ for persistence, and mean KGE
-is 0.538 versus 0.457. We therefore treat median NSE and KGE as the robust
-90-day result and report the outlier explicitly.
+(\texttt{413156098591201}) undergoes a validation-to-test shift: across seeds
+its calibrated NSE ranges from $-13.27$ to $-17.33$, while persistence is
+$-0.71$. Excluding that single well, the seed-averaged calibrated mean NSE is
+$+0.013$ versus $-0.211$ for persistence (individual seeds range from
+$-0.057$ to $+0.068$), and mean KGE is $0.524$ versus $0.457$. We therefore
+treat median NSE and KGE as the robust 90-day result and report the outlier
+explicitly.
 
 \begin{figure}[t]
 \centering
@@ -299,10 +314,10 @@ line.}
 The raw GRU is unstable on low-variance wells. On 30-day forecasts its mean NSE
 is $-3.155$ despite a median of 0.564; on 90-day forecasts the corresponding
 values are $-14.169$ and $-0.013$. The per-site blending weight fixes this:
-$\alpha_s>0$ for 53 of 74 wells at 30 days and 60 of 74 wells at 90 days, with
-the remainder falling back to persistence (Figure~\ref{fig:alpha}). The
-calibration is therefore not cosmetic; it is what makes a global residual model
-usable across heterogeneous wells.
+across seeds, $\alpha_s>0$ for 62--69 of 74 wells at 30 days and 58--67 of 74
+wells at 90 days, with the remainder falling back to persistence
+(Figure~\ref{fig:alpha}). The calibration is therefore not cosmetic; it is what
+makes a global residual model usable across heterogeneous wells.
 
 \begin{figure}[t]
 \centering
@@ -394,11 +409,14 @@ temporal splits, and per-site reporting in groundwater ML.
 
 \section*{Data and code availability}
 
-All raw observations are public USGS NWIS data \citep{usgs2026}. The processed
-panels, code, experiment configurations, and figure-generation scripts are
-available at \url{\codeurl} and archived at \url{\zenododoi}.
-The Kaggle notebook used for the reported runs is available at
-\url{\kaggleurl}, and the public Kaggle dataset is available at
+All raw observations are public USGS NWIS data \citep{usgs2026}. Code,
+experiment configurations, and figure-generation scripts are available at
+\url{\codeurl}. Processed panels and the release archive are archived at
+\url{\zenododoi}. The 30-day, 90-day, and seed-study Kaggle notebooks are
+available at \url{\kaggleurl},
+\url{https://www.kaggle.com/code/kkksssaaalzy/gwbench-gru-h90}, and
+\url{https://www.kaggle.com/code/kkksssaaalzy/gwbench-seeds}; the public
+Kaggle dataset is available at
 \url{https://www.kaggle.com/datasets/kkksssaaalzy/gwbench-data}.
 
 \section*{CRediT authorship contribution statement}
