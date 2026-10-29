@@ -16,6 +16,7 @@ import pandas as pd  # noqa: E402
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--horizons", default="30,90")
+    parser.add_argument("--prefix", default="missing")
     parser.add_argument("--out", default="data/processed/missing_summary.csv")
     return parser.parse_args()
 
@@ -25,7 +26,9 @@ def main() -> None:
     rows: list[dict] = []
     for horizon in [int(h) for h in args.horizons.split(",") if h.strip()]:
         paths = sorted(
-            (PROJECT_ROOT / "data/processed").glob(f"missing_h{horizon}_mask*.csv")
+            (PROJECT_ROOT / "data/processed").glob(
+                f"{args.prefix}_h{horizon}_mask*.csv"
+            )
         )
         if not paths:
             print(f"no files for horizon {horizon}")

@@ -2,4 +2,4 @@
 - Persistence remains strong at 30 days; a calibrated GRU ties it.
 - At 90 days the GRU improves median NSE, but ridge has a higher median.
 - A fixed blend fails; per-site calibration is the essential ingredient.
-- Stable under 10-50% missing inputs across repeated mask draws.
+- Missing-input robustness is horizon-dependent: 30-day skill degrades at 50%.

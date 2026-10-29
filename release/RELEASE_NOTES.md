@@ -29,10 +29,13 @@ This release accompanies the manuscript:
 - `notebooks/KAGGLE.md` - Kaggle reproduction instructions
 
 The revised manuscript adds five-mask missingness experiments, the fusion
-ablation, per-site and cross-panel analyses, bootstrap intervals, and a
-reproducibility appendix. New analysis scripts are
-`scripts/13_ridge_aligned_fast.py`, `scripts/14_panel_sensitivity.py`,
-`scripts/15_bootstrap.py`, and `scripts/16_aggregate_missing.py`.
+ablation, per-site and cross-panel analyses, bootstrap intervals, a purged
+temporal split with full retraining, and a reproducibility appendix. New
+analysis scripts are `scripts/13_ridge_aligned_fast.py`,
+`scripts/14_panel_sensitivity.py`, `scripts/15_bootstrap.py`,
+`scripts/16_aggregate_missing.py`, `scripts/17_fusion_ablation.py`,
+`scripts/18_tail_analysis.py`, and `scripts/19_purged_calibration.py`. The
+purged retraining kernel is in `notebooks/kaggle_purged/`.
 
 Raw USGS observations are not redistributed; `scripts/01_fetch_sites.py` and
 `scripts/02_fetch_levels.py` reproduce the download. See `data/README.md`.

@@ -153,11 +153,11 @@ before panel construction.
 | Horizon | Model | NSE mean | NSE median | KGE mean | KGE median |
 |---|---|---:|---:|---:|---:|
 | 30 d | Persistence | 0.573 | 0.729 | 0.784 | 0.823 |
-| 30 d | Ridge | 0.264 | 0.780 | 0.694 | 0.847 |
-| 30 d | Calibrated GRU | 0.575 | 0.765 | 0.761 | 0.838 |
+| 30 d | Ridge | 0.280 | 0.773 | 0.701 | 0.853 |
+| 30 d | Calibrated GRU | 0.587 | 0.768 | 0.766 | 0.833 |
 | 90 d | Persistence | -0.218 | -0.181 | 0.456 | 0.463 |
-| 90 d | Ridge | -1.688 | 0.304 | 0.380 | 0.622 |
-| 90 d | Calibrated GRU | -0.189 | 0.267 | 0.505 | 0.585 |
+| 90 d | Ridge | -1.713 | 0.339 | 0.402 | 0.632 |
+| 90 d | Calibrated GRU | -0.244 | 0.210 | 0.519 | 0.573 |
 
 Key findings: persistence is statistically tied with the calibrated GRU on
 mean NSE at 30 days; at 90 days the GRU improves median NSE but ridge has an
@@ -287,20 +287,21 @@ sensitive to a small number of distribution-shift wells.
 
 ### Missing-data robustness
 
-We evaluated the trained models with 10%/30%/50% of the input observations
-randomly hidden (no retraining). Metrics stay essentially flat:
+We evaluated the purged models with 0/10/30/50% of the input observations
+randomly hidden (no retraining), using five mask seeds:
 
 | Horizon | Masked input | NSE mean | NSE median | KGE mean |
 |---|---:|---:|---:|---:|
-| 30 days | 0% | 0.644 | 0.771 | 0.777 |
-| 30 days | 50% | 0.627 | 0.746 | 0.787 |
-| 90 days | 0% | 0.044 | 0.278 | 0.539 |
-| 90 days | 50% | 0.067 | 0.256 | 0.562 |
+| 30 days | 0% | 0.637 | 0.780 | 0.774 |
+| 30 days | 50% | 0.572 | 0.727 | 0.775 |
+| 90 days | 0% | -0.031 | 0.207 | 0.535 |
+| 90 days | 50% | 0.035 | 0.265 | 0.559 |
 
 The stress test uses every 7th test anchor, so the absolute values differ
-slightly from the full test-set metrics. The key result is that the residual +
-persistence-blending model does not collapse under missing inputs; it is a
-useful robustness check for the benchmark paper.
+from the full test-set metrics. The response is horizon-dependent: the 30-day
+model degrades at 50% masking and falls slightly below persistence, while the
+90-day model does not degrade. The experiment removes isolated observations at
+random; real multi-week gaps are a separate stress test.
 
 - One well (`315712106361803`) has 1,095 day-to-day jumps > 5 ft, consistent
   with pumping or a noisy sensor. It should be excluded or analyzed separately.

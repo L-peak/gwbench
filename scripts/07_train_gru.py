@@ -77,6 +77,14 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Skip validation-based persistence blending",
     )
+    parser.add_argument(
+        "--purge-targets",
+        action="store_true",
+        help=(
+            "Remove training/validation anchors whose target date crosses the "
+            "split boundary (purged temporal split)"
+        ),
+    )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--num-workers", type=int, default=0)
@@ -135,6 +143,22 @@ def main() -> None:
             train_end=args.train_end,
             val_end=args.val_end,
         )
+        if args.purge_targets:
+            train_target_dates = arrays.dates[splits["train"][:, 1] + args.horizon]
+            val_target_dates = arrays.dates[splits["val"][:, 1] + args.horizon]
+            n_train_before = len(splits["train"])
+            n_val_before = len(splits["val"])
+            splits["train"] = splits["train"][
+                train_target_dates <= pd.Timestamp(args.train_end)
+            ]
+            splits["val"] = splits["val"][
+                val_target_dates <= pd.Timestamp(args.val_end)
+            ]
+            print(
+                "Purged boundary-crossing anchors: "
+                f"train {n_train_before - len(splits['train']):,}, "
+                f"val {n_val_before - len(splits['val']):,}"
+            )
     else:
         meta_cols = ["site_no"]
         if "state_cd" in panel.columns:

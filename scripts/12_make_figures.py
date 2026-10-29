@@ -25,6 +25,9 @@ from gwbench.panel import evaluate_predictions, temporal_split  # noqa: E402
 
 FIG_DIR = PROJECT_ROOT / "paper" / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
+RESULTS_DIR = Path(
+    os.environ.get("GWBENCH_RESULTS_DIR", PROJECT_ROOT / "dist/kaggle_results_seeds")
+)
 
 plt.rcParams.update(
     {
@@ -115,15 +118,28 @@ def fig_horizon_skill() -> None:
     )
     horizons = curve["horizon"].tolist()
 
-    # Calibrated GRU, seeds 1-3, from the seed experiment.
-    model = pd.DataFrame(
-        [
-            {"horizon": 30, "nse_mean": 0.5753, "nse_mean_std": 0.0120,
-             "nse_median": 0.7653, "nse_median_std": 0.0103},
-            {"horizon": 90, "nse_mean": -0.1885, "nse_mean_std": 0.0925,
-             "nse_median": 0.2669, "nse_median_std": 0.0221},
+    model_rows = []
+    for horizon in (30, 90):
+        runs = [
+            json.loads(
+                (
+                    RESULTS_DIR
+                    / f"gru_h{horizon}_seed{seed}"
+                    / "test_metrics_calibrated.json"
+                ).read_text()
+            )
+            for seed in (1, 2, 3)
         ]
-    )
+        model_rows.append(
+            {
+                "horizon": horizon,
+                "nse_mean": np.mean([r["y_pred_nse_mean"] for r in runs]),
+                "nse_mean_std": np.std([r["y_pred_nse_mean"] for r in runs], ddof=1),
+                "nse_median": np.mean([r["y_pred_nse_median"] for r in runs]),
+                "nse_median_std": np.std([r["y_pred_nse_median"] for r in runs], ddof=1),
+            }
+        )
+    model = pd.DataFrame(model_rows)
 
     fig, ax = plt.subplots(figsize=(6.2, 3.6))
     ax.plot(curve["horizon"], curve["nse_mean"], "-o", color="#6b7280", label="Persistence mean")
@@ -160,7 +176,7 @@ def fig_horizon_skill() -> None:
 
 def fig_scatter() -> None:
     frame = pd.read_parquet(
-        PROJECT_ROOT / "dist/kaggle_results_h90/gru_h90/test_predictions.parquet"
+        RESULTS_DIR / "gru_h90_seed1" / "test_predictions.parquet"
     )
     if len(frame) > 20000:
         frame = frame.sample(n=20000, random_state=0)
@@ -197,8 +213,7 @@ def fig_alpha() -> None:
     for horizon in (30, 90):
         for seed in (1, 2, 3):
             path = (
-                PROJECT_ROOT
-                / "dist/kaggle_results_seeds"
+                RESULTS_DIR
                 / f"gru_h{horizon}_seed{seed}"
                 / "test_metrics_per_site.csv"
             )
@@ -249,8 +264,9 @@ def fig_alpha() -> None:
 def fig_missingness() -> None:
     fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.2))
     for horizon, color in ((30, "#2563eb"), (90, "#ea580c")):
+        prefix = os.environ.get("GWBENCH_MISSING_PREFIX", "missing")
         paths = sorted(
-            (PROJECT_ROOT / "data/processed").glob(f"missing_h{horizon}_mask*.csv")
+            (PROJECT_ROOT / "data/processed").glob(f"{prefix}_h{horizon}_mask*.csv")
         )
         if not paths:
             continue
@@ -311,8 +327,7 @@ def fig_per_site() -> None:
         frames = []
         for seed in (1, 2, 3):
             path = (
-                PROJECT_ROOT
-                / "dist/kaggle_results_seeds"
+                RESULTS_DIR
                 / f"gru_h{horizon}_seed{seed}"
                 / "test_metrics_per_site.csv"
             )
@@ -340,7 +355,7 @@ def fig_per_site() -> None:
                 linewidth=0.3,
                 label=state.upper(),
             )
-        lower = -2.0 if horizon == 30 else -15.0
+        lower = -2.0 if horizon == 30 else -20.0
         ax.plot([lower, 1], [lower, 1], color="black", linewidth=0.8)
         ax.axhline(0, color="gray", linewidth=0.5, alpha=0.5)
         ax.axvline(0, color="gray", linewidth=0.5, alpha=0.5)
@@ -348,7 +363,7 @@ def fig_per_site() -> None:
         ax.set_yscale("symlog", linthresh=1, linscale=1)
         ax.set_xlim(lower, 1)
         ax.set_ylim(lower, 1)
-        ticks = [-10, -3, -1, 0, 1] if horizon == 90 else [-2, -1, 0, 1]
+        ticks = [-20, -10, -3, -1, 0, 1] if horizon == 90 else [-2, -1, 0, 1]
         ax.set_xticks(ticks)
         ax.set_yticks(ticks)
         ax.set_xticklabels([str(tick) for tick in ticks])
@@ -415,8 +430,7 @@ def fig_outlier() -> None:
     group = panel[panel["site_no"].astype(str) == site].sort_values("date")
 
     pred = pd.read_parquet(
-        PROJECT_ROOT
-        / "dist/kaggle_results_seeds/gru_h90_seed1/test_predictions.parquet"
+        RESULTS_DIR / "gru_h90_seed1" / "test_predictions.parquet"
     )
     pred = pred[pred["site_no"].astype(str) == site].sort_values("date")
 

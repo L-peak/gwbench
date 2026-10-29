@@ -39,7 +39,7 @@ reported gains are difficult to compare because studies use different wells,
 splits, horizons, and baselines. We present \texttt{gwbench}, a reproducible
 benchmark built from public USGS National Water Information System daily
 depth-to-water records for 279 wells in California, Nebraska, and Texas
-(2000--2024), with a 74-well clean core and standardized temporal splits. We
+(2000--2024), with a 74-well clean core and purged temporal splits. We
 evaluate persistence, seasonal naive, per-site ridge regression, and a global
 residual GRU. Persistence is extremely strong at short horizons (mean NSE 0.97
 at one day). At 30 days the calibrated residual GRU is statistically tied with
@@ -47,15 +47,19 @@ persistence on mean NSE (95\% CI for $\Delta$NSE includes zero), and a fixed
 global blending weight is worse than persistence in mean NSE, showing that
 site-specific calibration---not blending alone---is essential. At 90 days the
 calibrated model improves median NSE relative to persistence from $-0.18$ to
-$0.27$ (paired median $\Delta$NSE $+0.11$, 95\% CI 0.03--0.21) and mean KGE
-from 0.46 to 0.51, but
-the mean NSE and mean KGE confidence intervals include zero and one
-distribution-shift well dominates the mean; we therefore treat the 90-day
-median NSE as the robust endpoint. A per-site ridge baseline attains higher
-median NSE and KGE than the GRU at both horizons but has much heavier
-mean-error tails; the GRU's independent contribution is robustness to
-low-variance wells, not median supremacy. Results are stable when 10--50\% of
-input observations are masked, using five repeated mask draws. The benchmark,
+$0.21$ (paired median $\Delta$NSE $+0.11$, 95\% CI 0.05--0.22) and mean KGE
+from 0.46 to 0.52 (95\% CI 0.01--0.11); mean NSE is $-0.24$ versus $-0.22$ and
+its confidence interval includes zero, because one distribution-shift well
+dominates the mean. We therefore treat the 90-day median NSE and KGE as the
+robust endpoints. A per-site ridge baseline attains higher
+median NSE and KGE than the GRU at both horizons but has heavier mean-error
+tails; the calibrated GRU avoids the most severe failures of the raw GRU and
+ridge, although persistence remains the most conservative tail baseline. We do
+not claim that the GRU is more robust in other regions or on unseen wells.
+Missing-input stress tests are asymmetric: at 30 days, 50\% masking pushes mean
+NSE below persistence, whereas at 90 days masking does not degrade performance.
+We therefore do not claim general robustness to real missing-data mechanisms.
+The benchmark,
 code, and experiment configurations are released to support reproducible
 comparison.
 \end{abstract}
@@ -83,13 +87,18 @@ extremely competitive for slow-moving hydrological variables.
 Prior groundwater-level ML studies have used feed-forward networks, support
 vector regression, random forests, LSTMs, GRUs, and hybrid decomposition
 methods, usually for one well or a small cluster
-\citep{khan2023,dey2025}. Reviews emphasize that reported accuracy is strongly
-study-specific and that preprocessing, split design, and baseline choice are
-rarely standardized \citep{khan2023,shen2018}. In surface-water hydrology,
-large-sample benchmarks and regional LSTMs have shown that a common dataset
-and split can change conclusions about model skill
-\citep{kratzert2019,reichstein2019}. We are not aware of a comparable open,
-multi-well daily groundwater benchmark with fixed splits, explicit
+\citep{khan2023,dey2025}. Direct comparisons of LSTM, CNN, and NARX models on
+monitoring wells have improved practice, but remain regional and rarely report
+a persistence baseline on identical anchors \citep{wunsch2021}. Reviews
+emphasize that reported accuracy is strongly study-specific and that
+preprocessing, split design, and baseline choice are rarely standardized
+\citep{rajaee2019,khan2023,shen2018}. Temporal autocorrelation also makes
+random or weakly separated splits optimistic, a problem well known in
+ecological and hydrological cross-validation \citep{roberts2017}. In
+surface-water hydrology, large-sample benchmarks and regional LSTMs have shown
+that a common dataset and split can change conclusions about model skill
+\citep{addor2017,kratzert2019,reichstein2019}. We are not aware of a comparable
+open, multi-well daily groundwater benchmark with fixed splits, explicit
 missingness, and a persistence baseline. This paper provides such a benchmark
 for three U.S. states and one widely measured parameter, and uses it to
 characterize when a deep model actually improves on persistence.
@@ -107,11 +116,12 @@ cannot rescue low-variance wells; site-specific calibration is the essential
 ingredient. Fourth, we report a horizon-dependent conclusion that is usually
 missing from the literature: at 30 days the calibrated model is statistically
 tied with persistence on mean NSE, whereas at 90 days it improves median NSE
-and median KGE, although mean NSE and mean KGE confidence intervals include
-zero. The benchmark also shows that a simple per-site ridge regression attains
+and mean/median KGE, but not mean NSE, whose confidence interval includes zero.
+The benchmark also shows that a simple per-site ridge regression attains
 higher median NSE and KGE than the GRU at both horizons but has much heavier
-mean-error tails; the GRU's independent contribution is robustness, not median
-supremacy. We support these claims with paired site-level bootstrap intervals,
+mean-error tails; the calibrated GRU reduces the most severe failures relative
+to the raw GRU and ridge, but persistence remains the most conservative tail
+baseline. We support these claims with paired site-level bootstrap intervals,
 per-site distributions, repeated missing-data stress tests, and a cross-panel
 sensitivity analysis.
 
@@ -188,20 +198,22 @@ large late-record gap (bottom).}
 
 \subsection{Splits and anchors}
 
-We use a strict temporal split: training data through 2015, validation data
+We use a purged temporal split: training data through 2015, validation data
 2016--2018, and test data 2019--2024. An anchor is the last day $t$ of a
 365-day input window; the forecast target is day $t+h$. An anchor is valid only
 if (i) the target day is observed and (ii) the input window contains at least
 30 observed values. Missing inputs are allowed and are represented by the mask
 channel; anchors with a missing target are excluded rather than imputed.
 Training anchors use a stride of three days, while validation and test anchors
-use every day. The clean core yields 103{,}956 test anchors at 30 days and
-99{,}750 at 90 days before per-site metric filtering. The validation period is
-used for early stopping and for fitting the blending weight; no test-period
-target is used for model selection or calibration. Because the split is
-assigned by the anchor date, the final $h$ training and validation anchors
-have targets that fall just inside the next period. This boundary overlap is
-limited to $h$ days per split and is discussed in Section~\ref{sec:limitations}.
+use every day. To prevent target leakage across split boundaries, a training
+anchor is retained only if its target date satisfies $t+h \leq 2015\text{-}12\text{-}31$,
+and a validation anchor is retained only if $t+h \leq 2018\text{-}12\text{-}31$.
+Test anchors satisfy $t \geq 2019\text{-}01\text{-}01$, so their targets are
+always in the test period. No target from a later period is used for early
+stopping or calibration. After purging, the 30-day model uses 116{,}415
+training anchors (stride 3) and 76{,}493 validation anchors; the 90-day model
+uses 114{,}941 and 72{,}462. The clean core yields 103{,}956 test anchors at
+30 days and 99{,}750 at 90 days before per-site metric filtering.
 
 \subsection{Baselines}
 
@@ -217,8 +229,8 @@ filtering as the neural model.
 \subsection{Global residual GRU}
 
 The main model is a two-layer GRU \citep{cho2014} shared across wells. Each
-input window spans 365 days and contains three channels: the normalized value,
-an observation mask, and day-of-year sine/cosine features. A learned site
+input window spans 365 days and contains four channels: the normalized value,
+an observation mask, and day-of-year sine and cosine features. A learned site
 embedding is concatenated to every time step. The target is the residual from
 the last observed value in the window:
 \begin{equation}
@@ -257,7 +269,7 @@ site-specific weighting, we compare four strategies on identical test anchors:
 (i) persistence ($\alpha=0$), (ii) the raw residual GRU ($\alpha=1$), (iii) a
 fixed global weight equal to the median validation-fitted $\alpha_s$ for that
 seed, and (iv) the proposed per-site $\alpha_s$. The fixed weight is refitted
-per seed and lies between 0.61 and 0.76 at 30 days and between 0.67 and 0.80 at
+per seed and lies between 0.62 and 0.69 at 30 days and between 0.64 and 0.73 at
 90 days. This ablation answers a direct question: does a single global blend
 recover the benefit of calibration, or is the site-specific weight necessary?
 
@@ -328,20 +340,20 @@ at 30 and 90 days (mean $\pm$ standard deviation over seeds 1--3).}
 \subsection{30 days: a statistical tie with persistence}
 
 Table~\ref{tab:models} summarizes the 30- and 90-day results. At 30 days the
-raw residual GRU has a median NSE of 0.564 but a mean NSE of $-3.155$ because
+raw residual GRU has a median NSE of 0.605 but a mean NSE of $-1.527$ because
 of a few catastrophic wells. Calibration removes these failures and yields a
-mean NSE of $0.575 \pm 0.012$ versus 0.573 for persistence; the paired
+mean NSE of $0.587 \pm 0.007$ versus 0.573 for persistence; the paired
 site-level bootstrap 95\% confidence interval for mean $\Delta$NSE is
-$[-0.077, 0.051]$, so the mean difference is not statistically distinguishable
-from zero. Median NSE improves from 0.729 to $0.765 \pm 0.010$, but mean KGE is
-slightly lower ($0.761 \pm 0.007$ vs 0.784). We therefore describe the 30-day
-result as a tie on mean NSE, not as an ML win. Seed-averaged per-site changes are mostly small:
-44/74 wells have positive $\Delta$NSE, 28 negative, and 2 zero; the median
-$\Delta$NSE is $+0.007$ (95\% CI $0.000$--$0.018$), while the mean is $+0.002$
-(95\% CI $-0.077$ to $0.051$). The mean $\Delta$KGE is $-0.023$ (95\% CI
-$-0.054$ to $-0.001$), and the median is $-0.002$ (95\% CI $-0.011$ to
-$0.001$).
-This confirms that the 30-day result is a tie, not a win.
+$[-0.056, 0.059]$, so the mean difference is not statistically distinguishable
+from zero. Median NSE improves from 0.729 to $0.768 \pm 0.008$, but mean KGE is
+slightly lower ($0.766 \pm 0.005$ vs 0.784) and its interval includes zero. We
+therefore describe the 30-day result as a tie on mean NSE, not as an ML win.
+Seed-averaged per-site changes are mostly small: 47/74 wells have positive
+$\Delta$NSE, 25 negative, and 2 zero; the median $\Delta$NSE is $+0.006$
+(95\% CI $0.000$--$0.022$), while the mean is $+0.014$ (95\% CI $-0.056$ to
+$0.059$). The mean $\Delta$KGE is $-0.018$ (95\% CI $-0.043$ to $0.000$), and
+the median is $-0.002$ (95\% CI $-0.012$ to $0.002$). This confirms that the
+30-day result is a tie, not a win.
 
 \begin{table}[t]
 \centering
@@ -357,15 +369,15 @@ Horizon & Model & NSE mean & NSE median & KGE mean & KGE median \\
 \midrule
 30 d & Persistence & 0.573 & 0.729 & 0.784 & 0.823 \\
 30 d & Seasonal naive & $-2.995$ & $-0.326$ & 0.149 & 0.357 \\
-30 d & Ridge & 0.264 & 0.780 & 0.694 & 0.847 \\
-30 d & Raw GRU & $-3.155 \pm 1.320$ & $0.564 \pm 0.028$ & $0.443 \pm 0.063$ & $0.761 \pm 0.022$ \\
-30 d & Calibrated GRU & $0.575 \pm 0.012$ & $0.765 \pm 0.010$ & $0.761 \pm 0.007$ & $0.838 \pm 0.009$ \\
+30 d & Ridge & 0.280 & 0.773 & 0.701 & 0.853 \\
+30 d & Raw GRU & $-1.527 \pm 0.508$ & $0.605 \pm 0.100$ & $0.538 \pm 0.032$ & $0.781 \pm 0.020$ \\
+30 d & Calibrated GRU & $0.587 \pm 0.007$ & $0.768 \pm 0.008$ & $0.766 \pm 0.005$ & $0.833 \pm 0.010$ \\
 \midrule
 90 d & Persistence & $-0.218$ & $-0.181$ & 0.456 & 0.463 \\
 90 d & Seasonal naive & $-3.437$ & $-0.404$ & 0.145 & 0.335 \\
-90 d & Ridge & $-1.688$ & 0.304 & 0.380 & 0.622 \\
-90 d & Raw GRU & $-14.169 \pm 7.688$ & $-0.013 \pm 0.195$ & $0.086 \pm 0.033$ & $0.492 \pm 0.024$ \\
-90 d & Calibrated GRU & $-0.189 \pm 0.093$ & $0.267 \pm 0.022$ & $0.505 \pm 0.014$ & $0.585 \pm 0.021$ \\
+90 d & Ridge & $-1.713$ & 0.339 & 0.402 & 0.632 \\
+90 d & Raw GRU & $-9.637 \pm 2.019$ & $-0.038 \pm 0.064$ & $0.098 \pm 0.056$ & $0.487 \pm 0.022$ \\
+90 d & Calibrated GRU & $-0.244 \pm 0.008$ & $0.210 \pm 0.039$ & $0.519 \pm 0.004$ & $0.573 \pm 0.015$ \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -376,43 +388,53 @@ A per-site ridge regression with lag and rolling features (last value; 7-, 30-,
 90-, and 365-day rolling means and standard deviations; day-of-year terms; no
 linear time trend) was evaluated on exactly the same test anchors as the GRU
 (Table~\ref{tab:models}).
-It achieved median NSE 0.780 at 30 days and 0.304 at 90 days, compared with
-persistence 0.729 and $-0.181$. Its mean NSE was 0.264 at 30 days and $-1.688$
+It achieved median NSE 0.773 at 30 days and 0.339 at 90 days, compared with
+persistence 0.729 and $-0.181$. Its mean NSE was 0.280 at 30 days and $-1.713$
 at 90 days, showing that even a linear model can be dominated by a few trending
-or low-variance wells. Median KGE was 0.847 and 0.622, compared with 0.822 and
+or low-variance wells. Median KGE was 0.853 and 0.632, compared with 0.822 and
 0.462 for persistence. Seasonal naive is far worse at both horizons (mean NSE
 $-2.995$ and $-3.437$). The ridge baseline therefore improves the median but is
-not robust in the mean. Because ridge's median NSE (0.780 and 0.304) is higher
-than the calibrated GRU's (0.765 and 0.267), the GRU's independent contribution
-is not median accuracy: it is tail robustness. A benchmark that reported only
-medians would favor ridge, while one that reported only means would favor the
-calibrated GRU. Reporting both, plus per-site distributions, is therefore
-essential; this is one of the main lessons of the benchmark.
+not robust in the mean. Because ridge's median NSE (0.773 and 0.339) is higher
+than the calibrated GRU's (0.768 and 0.210), the GRU's independent contribution
+is not median accuracy: it is a reduction in the most severe failures relative
+to the raw GRU and ridge. Persistence still has fewer deep failures than the
+calibrated GRU, so the GRU is not uniformly more robust. A benchmark that
+reported only medians would favor ridge, while one that reported only means
+would favor the calibrated GRU. Reporting both, plus per-site distributions and
+tail counts, is therefore essential; this is one of the main lessons of the
+benchmark.
 
 \subsection{90 days: robust median and KGE gains}
 
-At 90 days the calibrated model improves every aggregate point estimate
-(Table~\ref{tab:models}), but the statistical support is strongest for the
-median NSE. Median NSE rises from $-0.181$ to $0.267 \pm 0.022$,
-mean KGE from 0.456 to $0.505 \pm 0.014$, and median KGE from 0.463 to
-$0.585 \pm 0.021$. Seed-averaged per-site changes are asymmetric:
-54/73 wells have positive $\Delta$NSE, 13 negative, and 6 zero; the median
-$\Delta$NSE is $+0.115$ (95\% CI $0.033$--$0.207$), while the mean is $+0.029$
-(95\% CI $-0.437$ to $0.299$). The mean $\Delta$KGE is $+0.049$ (95\% CI
-$-0.002$ to $0.096$), and the median is $+0.019$ (95\% CI $0.000$ to $0.036$).
-For reference, the mean per-seed win counts are $49.7 \pm 3.8$ (NSE) and
-$41.0 \pm 3.6$ (KGE) of 73 wells; averaging metrics over seeds moves some
-near-zero wells across zero, which is why the seed-averaged sign counts are
-slightly higher. The median NSE gain is the statistically robust result; the
-mean is sensitive to a few wells. The mean NSE improvement is smaller and its
-bootstrap interval includes zero because one well
+At 90 days the calibrated model improves the median and KGE point estimates
+(Table~\ref{tab:models}), but not mean NSE. Median NSE rises from $-0.181$ to
+$0.210 \pm 0.039$, mean KGE from 0.456 to $0.519 \pm 0.004$, and median KGE
+from 0.463 to $0.573 \pm 0.015$; mean NSE is $-0.244 \pm 0.008$, slightly below
+persistence ($-0.218$). Seed-averaged per-site changes are asymmetric: 51/73
+wells have positive $\Delta$NSE, 18 negative, and 4 zero; the median
+$\Delta$NSE is $+0.107$ (95\% CI $0.048$--$0.225$), while the mean is $-0.027$
+(95\% CI $-0.531$ to $0.262$). The mean $\Delta$KGE is $+0.063$ (95\% CI
+$0.010$ to $0.109$), and the median is $+0.023$ (95\% CI $0.010$ to $0.076$).
+The median NSE and both KGE intervals are the statistically robust results; the
+mean NSE interval includes zero and its point estimate is negative. One well
 (\texttt{413156098591201}) undergoes a validation-to-test shift: across seeds
-its calibrated NSE ranges from $-13.27$ to $-17.33$, while persistence is
+its calibrated NSE ranges from $-14.45$ to $-17.57$, while persistence is
 $-0.71$. Excluding that single well, the seed-averaged calibrated mean NSE is
-$+0.013$ versus $-0.211$ for persistence (individual seeds range from
-$-0.057$ to $+0.068$), and mean KGE is $0.524$ versus $0.457$. We therefore
-treat median NSE and KGE as the robust 90-day result and report the outlier
-explicitly.
+$-0.025$ versus $-0.211$ for persistence, and mean KGE is $0.539$ versus
+$0.457$. We therefore report median NSE and KGE as the robust 90-day results
+and treat the outlier explicitly.
+
+\paragraph{Tail diagnostics}
+To avoid equating a better mean with general robustness, we count severe
+per-site failures. At 90 days, the number of wells with NSE below $-1$ is 9
+for the calibrated GRU, 7 for persistence, 11 for ridge, and 25 for the raw
+GRU; the corresponding minimum NSE values are $-16.0$, $-3.5$, $-37.9$, and
+$-228.4$. At 30 days the counts are 2, 1, 6, and 9, respectively. The
+calibrated GRU therefore removes many of the extreme failures of the raw GRU
+and ridge, but persistence still has fewer deep failures and a much smaller
+worst case. The evidence supports a limited claim---fewer severe failures than
+the learned alternatives---not uniform robustness or superiority over
+persistence.
 
 \begin{figure}[t]
 \centering
@@ -426,18 +448,18 @@ line.}
 \subsection{Why calibration is necessary}
 
 The raw GRU is unstable on low-variance wells. On 30-day forecasts its mean NSE
-is $-3.155$ despite a median of 0.564; on 90-day forecasts the corresponding
-values are $-14.169$ and $-0.013$. The per-site blending weight fixes this:
-across seeds, $\alpha_s>0$ for 62--69 of 74 wells at 30 days and 58--67 of 74
+is $-1.527$ despite a median of 0.605; on 90-day forecasts the corresponding
+values are $-9.637$ and $-0.038$. The per-site blending weight fixes this:
+across seeds, $\alpha_s>0$ for 60--69 of 74 wells at 30 days and 63--67 of 74
 wells at 90 days, with the remainder falling back to persistence
 (Figure~\ref{fig:alpha}). The calibration is therefore not cosmetic; it is what
 makes a global residual model usable across heterogeneous wells.
 
 A fixed global weight does not reproduce this benefit (Table~\ref{tab:fusion}).
-At 30 days, the median validation-fitted weight yields mean NSE $-0.995$ and
-median NSE 0.650, both worse than persistence (0.573 and 0.729); at 90 days it
-yields mean NSE $-7.806$ and median NSE 0.022, far below the per-site result
-($-0.189$ and 0.267). A single scalar cannot down-weight the low-variance wells
+At 30 days, the median validation-fitted weight yields mean NSE $-0.325$ and
+median NSE 0.658, both worse than persistence (0.573 and 0.729); at 90 days it
+yields mean NSE $-4.661$ and median NSE 0.070, far below the per-site result
+($-0.244$ and 0.210). A single scalar cannot down-weight the low-variance wells
 that dominate the mean without also shrinking the correction on wells where the
 GRU is useful. The ablation therefore isolates site-specific calibration, not
 the GRU alone or blending in general, as the ingredient that makes the residual
@@ -446,8 +468,8 @@ model work.
 \begin{table}[t]
 \centering
 \caption{Fusion ablation on the clean core. Fixed $\alpha$ is the median of the
-validation-fitted per-site weights for each seed (mean 0.664 at 30 days and
-0.741 at 90 days); per-site $\alpha$ uses the validation-fitted $\alpha_s$.
+validation-fitted per-site weights for each seed (mean 0.661 at 30 days and
+0.698 at 90 days); per-site $\alpha$ uses the validation-fitted $\alpha_s$.
 Values are mean $\pm$ standard deviation over seeds 1--3; persistence is
 deterministic.}
 \label{tab:fusion}
@@ -456,15 +478,15 @@ deterministic.}
 \toprule
 Metric & Persistence ($\alpha=0$) & Raw GRU ($\alpha=1$) & Fixed $\alpha$ & Per-site $\alpha$ \\
 \midrule
-30 d NSE mean   & 0.573 & $-3.155 \pm 1.320$ & $-0.995 \pm 0.394$ & $0.575 \pm 0.012$ \\
-30 d NSE median & 0.729 & $0.564 \pm 0.028$ & $0.650 \pm 0.019$ & $0.765 \pm 0.010$ \\
-30 d KGE mean   & 0.784 & $0.443 \pm 0.063$ & $0.596 \pm 0.027$ & $0.761 \pm 0.007$ \\
-30 d KGE median & 0.822 & $0.761 \pm 0.022$ & $0.788 \pm 0.039$ & $0.838 \pm 0.009$ \\
+30 d NSE mean   & 0.573 & $-1.527 \pm 0.508$ & $-0.325 \pm 0.317$ & $0.587 \pm 0.007$ \\
+30 d NSE median & 0.729 & $0.605 \pm 0.100$ & $0.658 \pm 0.049$ & $0.768 \pm 0.008$ \\
+30 d KGE mean   & 0.784 & $0.538 \pm 0.032$ & $0.650 \pm 0.026$ & $0.766 \pm 0.005$ \\
+30 d KGE median & 0.822 & $0.781 \pm 0.020$ & $0.809 \pm 0.008$ & $0.833 \pm 0.010$ \\
 \midrule
-90 d NSE mean   & $-0.218$ & $-14.169 \pm 7.688$ & $-7.806 \pm 4.549$ & $-0.189 \pm 0.093$ \\
-90 d NSE median & $-0.181$ & $-0.013 \pm 0.195$ & $0.022 \pm 0.202$ & $0.267 \pm 0.022$ \\
-90 d KGE mean   & 0.456 & $0.086 \pm 0.033$ & $0.222 \pm 0.052$ & $0.505 \pm 0.014$ \\
-90 d KGE median & 0.463 & $0.492 \pm 0.024$ & $0.505 \pm 0.015$ & $0.585 \pm 0.021$ \\
+90 d NSE mean   & $-0.218$ & $-9.637 \pm 2.019$ & $-4.661 \pm 0.997$ & $-0.244 \pm 0.008$ \\
+90 d NSE median & $-0.181$ & $-0.038 \pm 0.064$ & $0.070 \pm 0.070$ & $0.210 \pm 0.039$ \\
+90 d KGE mean   & 0.456 & $0.098 \pm 0.056$ & $0.256 \pm 0.066$ & $0.519 \pm 0.004$ \\
+90 d KGE median & 0.463 & $0.487 \pm 0.022$ & $0.513 \pm 0.018$ & $0.573 \pm 0.015$ \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -481,18 +503,22 @@ than persistence.}
 
 \subsection{Missing-data robustness}
 
-On a stride-7 test subset, hiding 10--50\% of the observed input values at test
-time produces only small changes (Table~\ref{tab:missing},
-Figure~\ref{fig:missing}). At 30 days, mean NSE falls from 0.629 to 0.612 and
-mean KGE rises from 0.769 to 0.783; the median NSE is essentially unchanged
-(0.773 to 0.773). At 90 days, mean NSE falls from 0.023 to approximately zero,
-median NSE rises from 0.223 to 0.263, and mean KGE is flat (0.538 to 0.539).
-The 90-day model therefore remains well above persistence on the same
-stride-7 anchors (NSE $-0.221$, KGE 0.456) even at 50\% masking, and the
-mask-to-mask standard deviation is at most 0.006 in NSE and 0.002 in KGE. The
+On a stride-7 test subset, the response to missing inputs is asymmetric
+(Table~\ref{tab:missing}, Figure~\ref{fig:missing}). At 30 days, mean NSE falls
+from 0.637 at 0\% masking to 0.572 at 50\%, median NSE from 0.780 to 0.727, and
+mean KGE from 0.774 to 0.775. At 50\% masking the 30-day model is therefore
+slightly below persistence on the same stride-7 anchors (mean NSE 0.615,
+median 0.744, KGE 0.786). At 90 days, by contrast, mean NSE rises from $-0.031$
+to 0.035, median NSE from 0.207 to 0.265, and mean KGE from 0.535 to 0.559;
+masking does not degrade performance at this horizon. The mask-to-mask
+standard deviation is at most 0.004 in mean NSE and 0.002 in mean KGE. The
 stride-7 protocol is used for computational tractability and is not directly
-comparable to the full test-set metrics in Table~\ref{tab:models}; the relevant
-result is the absence of a collapse across missingness levels.
+comparable to the full test-set metrics in Table~\ref{tab:models}. The
+experiment removes isolated observations uniformly at random. Real groundwater
+gaps are often multi-week and associated with instrument failure, maintenance,
+or extreme weather; the results therefore describe robustness to scattered
+missing inputs, not to every missing-data mechanism. A continuous-gap stress
+test is left for future work.
 
 \begin{table}[t]
 \centering
@@ -507,14 +533,14 @@ Table~\ref{tab:models}.}
 \toprule
 Horizon & Masked input & NSE mean & NSE median & KGE mean & KGE median \\
 \midrule
-30 d & 0\%  & $0.629 \pm 0.000$ & $0.773 \pm 0.000$ & $0.769 \pm 0.000$ & $0.843 \pm 0.000$ \\
-30 d & 10\% & $0.629 \pm 0.000$ & $0.771 \pm 0.001$ & $0.775 \pm 0.000$ & $0.843 \pm 0.002$ \\
-30 d & 30\% & $0.617 \pm 0.002$ & $0.764 \pm 0.005$ & $0.780 \pm 0.001$ & $0.852 \pm 0.003$ \\
-30 d & 50\% & $0.612 \pm 0.001$ & $0.773 \pm 0.003$ & $0.783 \pm 0.001$ & $0.837 \pm 0.004$ \\
-90 d & 0\%  & $0.023 \pm 0.000$ & $0.223 \pm 0.000$ & $0.538 \pm 0.000$ & $0.595 \pm 0.000$ \\
-90 d & 10\% & $0.019 \pm 0.002$ & $0.236 \pm 0.001$ & $0.538 \pm 0.001$ & $0.597 \pm 0.002$ \\
-90 d & 30\% & $0.006 \pm 0.003$ & $0.296 \pm 0.008$ & $0.537 \pm 0.001$ & $0.597 \pm 0.002$ \\
-90 d & 50\% & $-0.000 \pm 0.006$ & $0.263 \pm 0.005$ & $0.539 \pm 0.001$ & $0.591 \pm 0.001$ \\
+30 d & 0\%  & $0.637 \pm 0.000$ & $0.780 \pm 0.000$ & $0.774 \pm 0.000$ & $0.844 \pm 0.000$ \\
+30 d & 10\% & $0.628 \pm 0.001$ & $0.780 \pm 0.000$ & $0.778 \pm 0.000$ & $0.843 \pm 0.004$ \\
+30 d & 30\% & $0.598 \pm 0.004$ & $0.743 \pm 0.011$ & $0.774 \pm 0.001$ & $0.831 \pm 0.001$ \\
+30 d & 50\% & $0.572 \pm 0.002$ & $0.727 \pm 0.003$ & $0.775 \pm 0.001$ & $0.828 \pm 0.002$ \\
+90 d & 0\%  & $-0.031 \pm 0.000$ & $0.207 \pm 0.000$ & $0.535 \pm 0.000$ & $0.566 \pm 0.000$ \\
+90 d & 10\% & $-0.002 \pm 0.001$ & $0.164 \pm 0.004$ & $0.543 \pm 0.001$ & $0.569 \pm 0.002$ \\
+90 d & 30\% & $0.021 \pm 0.002$ & $0.293 \pm 0.012$ & $0.554 \pm 0.001$ & $0.604 \pm 0.004$ \\
+90 d & 50\% & $0.035 \pm 0.004$ & $0.265 \pm 0.017$ & $0.559 \pm 0.001$ & $0.611 \pm 0.003$ \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -522,30 +548,31 @@ Horizon & Masked input & NSE mean & NSE median & KGE mean & KGE median \\
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.8\linewidth]{figures/fig6_missingness.png}
-\caption{Calibrated GRU skill under random input missingness.}
+\caption{Calibrated GRU skill under random input missingness, mean $\pm$
+standard deviation across five mask seeds. The 30-day model degrades at high
+masking, while the 90-day model does not.}
 \label{fig:missing}
 \end{figure}
 
 \paragraph{Evaluation-window sensitivity}
 The training stride changes the number of training windows but not the test-day
 protocol. Re-evaluating the trained models on a stride-3 test subset (matching
-training) changes mean NSE from 0.575 to 0.606 at 30 days and from $-0.189$ to
-$-0.197$ at 90 days across seeds; median and KGE differences are below 0.01. A
-stride-7 subset gives higher 90-day mean NSE (0.033) because it excludes the
-outlier, but its median and KGE remain stable. The conclusions are therefore
-not driven by the stride choice.
+training) changes mean NSE from 0.587 to 0.620 at 30 days and from $-0.244$ to
+$-0.259$ at 90 days across seeds; median and KGE differences are below 0.02.
+The conclusions are therefore not driven by the stride choice.
 
 \subsection{State-level heterogeneity}
 
 Table~\ref{tab:states} breaks the seed-averaged per-site results down by state.
-At 90 days, mean NSE is $-0.423$ vs $-0.457$ for persistence in California,
-$-0.103$ vs $-0.118$ in Nebraska, and 0.697 vs 0.599 in Texas. The improvements
-are small and not uniform: Nebraska improves modestly, California improves
-slightly, and Texas (five wells) has a slightly lower mean KGE for the model
-(0.772 vs 0.789). At 30 days the model is essentially tied with persistence in
-California and Texas and has a lower mean KGE in Nebraska. The aggregate result
-is therefore not driven by a single state, but the gains are heterogeneous;
-future benchmark reports should include state or aquifer strata.
+At 90 days, mean NSE is $-0.501$ vs $-0.457$ for persistence in California,
+$-0.148$ vs $-0.118$ in Nebraska, and 0.700 vs 0.599 in Texas. The pattern is
+mixed: California and Nebraska have slightly lower mean NSE but higher mean KGE
+(0.437 vs 0.379 and 0.556 vs 0.479), while Texas has higher NSE but slightly
+lower KGE (0.776 vs 0.789). At 30 days the model is essentially tied with
+persistence in California and Texas and has a lower mean KGE in Nebraska. The
+aggregate result is therefore not driven by a single state, but the gains are
+heterogeneous; future benchmark reports should include state or aquifer
+strata.
 
 \begin{table}[t]
 \centering
@@ -558,9 +585,9 @@ days.}
 \toprule
 State & $N$ & 30d NSE (model/pers) & 30d KGE (model/pers) & 90d NSE (model/pers) & 90d KGE (model/pers) \\
 \midrule
-CA & 32/32 & 0.638/0.631 & 0.796/0.788 & $-0.423$/$-0.457$ & 0.413/0.379 \\
-NE & 37/36 & 0.480/0.483 & 0.709/0.760 & $-0.103$/$-0.118$ & 0.550/0.479 \\
-TX & 5/5 & 0.885/0.876 & 0.916/0.932 & 0.697/0.599 & 0.772/0.789 \\
+CA & 32/32 & 0.633/0.631 & 0.789/0.788 & $-0.501$/$-0.457$ & 0.437/0.379 \\
+NE & 37/36 & 0.506/0.483 & 0.725/0.760 & $-0.148$/$-0.118$ & 0.556/0.479 \\
+TX & 5/5 & 0.887/0.876 & 0.920/0.932 & 0.700/0.599 & 0.776/0.789 \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -570,13 +597,13 @@ TX & 5/5 & 0.885/0.876 & 0.916/0.932 & 0.697/0.599 & 0.772/0.789 \\
 To test whether the conclusions depend on screening, we re-evaluated
 persistence and ridge on the full, screened-core, and clean-core panels using
 the anchor protocol (Table~\ref{tab:panelsensitivity}). Screening changes
-baseline skill. At 90 days, persistence mean NSE is $-3.08$ on the full panel,
+baseline skill. At 90 days, persistence mean NSE is $-3.05$ on the full panel,
 $-0.27$ on the core, and $-0.22$ on the clean core; the corresponding medians
-are $-0.20$, $-0.42$, and $-0.18$. The clean core therefore has the strongest
+are $-0.26$, $-0.42$, and $-0.18$. The clean core therefore has the strongest
 90-day persistence baseline, not the weakest. Ridge shows the same pattern in the
-median: its 90-day median NSE is 0.175 on the full panel, 0.265 on the core,
-and 0.304 on the clean core, although its mean remains strongly negative on
-all panels ($-22.97$, $-1.58$, and $-1.69$). The GRU was trained only on the
+median: its 90-day median NSE is 0.092 on the full panel, 0.263 on the core,
+and 0.339 on the clean core, although its mean remains strongly negative on
+all panels ($-26.49$, $-1.58$, and $-1.71$). The GRU was trained only on the
 clean core and is not directly comparable across panels, so the table is a
 sensitivity check for the deterministic baselines. The main lesson is that
 cleaning removes jumpy wells and strengthens persistence; the clean-core
@@ -596,9 +623,9 @@ only on the clean core and is not compared across panels.}
 \toprule
 Panel & $N$ (30/90) & Persistence NSE mean & Persistence NSE median & Ridge NSE mean & Ridge NSE median \\
 \midrule
-Full & 246/245 & 0.582 / $-3.079$ & 0.687 / $-0.199$ & $-2.139$ / $-22.966$ & 0.721 / 0.175 \\
-Core & 89/88 & 0.542 / $-0.271$ & 0.645 / $-0.418$ & 0.284 / $-1.582$ & 0.715 / 0.265 \\
-Clean & 74/73 & 0.573 / $-0.218$ & 0.729 / $-0.181$ & 0.264 / $-1.688$ & 0.780 / 0.304 \\
+Full & 246/245 & 0.579 / $-3.051$ & 0.666 / $-0.264$ & $-2.037$ / $-26.491$ & 0.709 / 0.092 \\
+Core & 89/88 & 0.542 / $-0.271$ & 0.645 / $-0.418$ & 0.298 / $-1.579$ & 0.709 / 0.263 \\
+Clean & 74/73 & 0.573 / $-0.218$ & 0.729 / $-0.181$ & 0.280 / $-1.713$ & 0.773 / 0.339 \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -631,12 +658,12 @@ observations.}
 
 Figure~\ref{fig:per_site} shows the per-site relationship between persistence
 and calibrated-GRU NSE for both horizons, together with the distribution of
-$\Delta$NSE. At 30 days the points lie close to the diagonal: 44 wells improve,
-28 worsen, and 2 are unchanged, with a median gain of 0.007. At 90 days the
-distribution is wider and asymmetric: 54 wells improve, 13 worsen, and 6 are
-unchanged, with a median gain of 0.115. The histogram makes the aggregate
+$\Delta$NSE. At 30 days the points lie close to the diagonal: 47 wells improve,
+25 worsen, and 2 are unchanged, with a median gain of 0.006. At 90 days the
+distribution is wider and asymmetric: 51 wells improve, 18 worsen, and 4 are
+unchanged, with a median gain of 0.107. The histogram makes the aggregate
 result easier to interpret than a single mean: most wells improve modestly,
-a minority worsen, and one well has an NSE of $-14.7$. This is a
+a minority worsen, and one well has an NSE of $-16.0$. This is a
 distributional improvement, not a uniform gain, and it is the reason we report
 medians and win/loss counts alongside means.
 
@@ -647,7 +674,7 @@ medians and win/loss counts alongside means.
 90-day forecasts. Left: persistence NSE versus calibrated-GRU NSE on symlog
 axes, with the 1:1 line and colors by state. Right: distribution of
 $\Delta$NSE (calibrated minus persistence); the dashed line is the median.
-The 90-day well with NSE $-14.7$ is annotated.}
+The 90-day well with NSE $-16.0$ is annotated.}
 \label{fig:per_site}
 \end{figure}
 
@@ -665,19 +692,18 @@ metric. A fixed global weight does not solve this problem (Table~\ref{tab:fusion
 the calibration must be fitted per well. Third, the
 useful signal appears at longer horizons. At 90 days, persistence is already
 poor (mean NSE $-0.218$), and the calibrated model improves median NSE, mean
-KGE, and median KGE across seeds, although mean NSE and mean KGE have
-confidence intervals that include zero and one well drives much of the mean
-behavior. The state-level table and the per-site win/loss counts reinforce a
-more nuanced reading: the 90-day result is a distributional improvement
-(median and KGE) rather than a uniform mean gain. At 90 days, 54/73 wells
-improve on NSE, 13 worsen, and 6 are unchanged; the mean is dominated by a few
-wells. We
-therefore recommend that benchmark users report the full distribution, not
-only a mean. The ridge comparison makes the point concrete: ridge has the
-better median at both horizons but far worse mean errors, so neither model
-dominates. The calibrated GRU's contribution is tail robustness, not median
-accuracy, and a benchmark that reports only one aggregate would conceal this
-trade-off.
+KGE, and median KGE across seeds, although mean NSE does not improve and its
+confidence interval includes zero; one well drives much of the mean behavior.
+The state-level table and the per-site win/loss counts reinforce a more nuanced
+reading: the 90-day result is a distributional improvement (median and KGE)
+rather than a uniform mean gain. At 90 days, 51/73 wells improve on NSE, 18
+worsen, and 4 are unchanged; the mean is dominated by a few wells. We therefore
+recommend that benchmark users report the full distribution, not only a mean.
+The ridge comparison makes the point concrete: ridge has the better median at
+both horizons but far worse mean errors, so neither model dominates. The
+calibrated GRU reduces the most severe failures relative to the raw GRU and
+ridge, but persistence remains the most conservative tail baseline; a benchmark
+that reports only one aggregate would conceal this trade-off.
 
 The outlier well illustrates a broader evaluation issue. Calibration weights
 are fitted on 2016--2018 and applied to 2019--2024; one well experiences a
@@ -719,16 +745,10 @@ persistence anchoring and validation calibration, not from external drivers.
 
 The benchmark covers three states and one parameter/statistic; the clean core
 has 74 wells. The calibration weight is fitted on a single validation period,
-and performance can degrade under distribution shift. Because the split is
-assigned by anchor date, the last $h$ training and validation anchors have
-targets that fall just inside the next period; this affects at most $h$ days
-per boundary and therefore early stopping and calibration, but not the test
-predictions themselves. A fully purged split, in which no target crosses a
-split boundary, is the conservative alternative and is recommended for future
-benchmark versions. USGS records contain datum and sensor changes that we flag
-and filter but do not physically correct. The univariate design and
-site-embedding limitation are discussed above and define the main directions
-for future work.
+and performance can degrade under distribution shift. USGS records contain
+datum and sensor changes that we flag and filter but do not physically correct.
+The univariate design and site-embedding limitation are discussed above and
+define the main directions for future work.
 
 \section{Conclusions}
 
@@ -737,18 +757,22 @@ groundwater-level forecasting, and a persistence-anchored residual GRU with
 per-site calibration. At 30 days, the calibrated model is statistically tied
 with persistence on mean NSE, and a fixed global blending weight is worse than
 persistence in mean NSE; at 90 days, the per-site calibrated model improves
-median NSE relative to persistence from $-0.181$ to 0.267 (paired median gain
-0.115, 95\% CI 0.033--0.207) and mean KGE from 0.456 to 0.505, although mean
-NSE and mean KGE
-confidence intervals include zero and one distribution-shift well dominates
+median NSE relative to persistence from $-0.181$ to 0.210 (paired median gain
+0.107, 95\% CI 0.048--0.225) and mean KGE from 0.456 to 0.519 (95\% CI
+0.010--0.109), although mean NSE is $-0.244$ versus $-0.218$ and its
+confidence interval includes zero because one distribution-shift well dominates
 the mean. A per-site ridge baseline has higher median NSE and KGE than the GRU
-at both horizons but much worse mean errors; the GRU's independent contribution
-is tail robustness, not median supremacy. The uncalibrated GRU fails
+at both horizons but much worse mean errors; the calibrated GRU avoids the most
+severe failures of the raw GRU and ridge, although persistence remains the most
+conservative tail baseline and we do not claim broader robustness. The
+uncalibrated GRU fails
 catastrophically on low-variance wells, and the site-specific validation-fitted
 weight is essential; a global weight does not reproduce the gain. The model is
-stable under 10--50\% missing input observations across repeated mask draws. We
-hope the benchmark encourages stronger baselines, temporal splits, and per-site
-reporting in groundwater ML.
+Missing-input behavior is horizon-dependent: at 30 days, 50\% masking pushes
+mean NSE below persistence, whereas at 90 days masking does not degrade
+performance. We therefore do not claim general robustness to real missing-data
+mechanisms. We hope the benchmark encourages stronger baselines, purged
+temporal splits, and per-site reporting in groundwater ML.
 
 \section*{Data and code availability}
 
@@ -806,7 +830,8 @@ channels (site-normalized value, observation mask, sine and cosine of
 day-of-year). The model is trained with Adam (learning rate $10^{-3}$), batch
 size 256, MSE loss, gradient clipping at 1.0, at most 40 epochs, and early
 stopping with patience 5 on validation RMSE. Training anchors use stride 3 and
-validation/test anchors stride 1. The residual target is defined in
+validation/test anchors stride 1; training and validation anchors are purged
+at target-date boundaries (Section 3.1). The residual target is defined in
 Equation~(1), so a zero output reproduces persistence. The 30- and 90-day
 models are trained separately with seeds 1, 2, and 3. The same split and panel
 are used for all seeds.

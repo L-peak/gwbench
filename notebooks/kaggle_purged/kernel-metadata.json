@@ -1,0 +1,13 @@
+{
+  "id": "kkksssaaalzy/gwbench-purged-retrain",
+  "title": "gwbench purged retrain",
+  "code_file": "purged_retrain.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": false,
+  "dataset_sources": ["kkksssaaalzy/gwbench-data"],
+  "competition_sources": [],
+  "kernel_sources": []
+}

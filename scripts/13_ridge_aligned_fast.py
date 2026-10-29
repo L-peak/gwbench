@@ -44,8 +44,12 @@ def site_frame(dates: pd.DatetimeIndex, group: pd.DataFrame) -> pd.DataFrame:
     last = frame["value"].ffill()
     features = {"last": last}
     for window in (7, 30, 90, 365):
-        features[f"mean{window}"] = frame["value"].rolling(window, min_periods=1).mean()
-        features[f"std{window}"] = frame["value"].rolling(window, min_periods=1).std(ddof=0)
+        features[f"mean{window}"] = (
+            frame["value"].rolling(window, min_periods=1).mean().fillna(last)
+        )
+        features[f"std{window}"] = (
+            frame["value"].rolling(window, min_periods=1).std(ddof=0).fillna(0.0)
+        )
     features["history"] = frame["observed"].rolling(365, min_periods=1).sum()
     angle = 2.0 * np.pi * dates.dayofyear.to_numpy() / 365.25
     features["sin"] = pd.Series(np.sin(angle), index=dates)
