@@ -1,20 +1,20 @@
 # C&G submission checklist
 
-- [ ] Author names, affiliation, email in `main.tex`
-- [ ] Zenodo DOI filled in `main.tex`, `CITATION.cff`, and release notes
-- [ ] GitHub repository public and release v0.1.x published
-- [ ] Kaggle dataset/notebooks public, or Kaggle sentence removed
-- [ ] `highlights.txt` uploaded (3-5 bullets, <=85 characters each)
-- [ ] Cover letter uploaded
+- [x] Author names, affiliation, email in `main.tex`
+- [x] Zenodo DOI filled in `main.tex`, `CITATION.cff`, and release notes
+- [x] GitHub repository public and release v0.1.x published
+- [x] Kaggle dataset/notebooks public
+- [x] `highlights.txt` prepared (3-5 bullets, <=85 characters each)
+- [x] Cover letter prepared
 - [ ] Graphical abstract (optional; check current C&G guide)
-- [ ] CRediT author contributions statement
-- [ ] Declaration of competing interest
-- [ ] Data availability statement with GitHub + Zenodo + USGS links
-- [ ] Code availability statement
-- [ ] Acknowledgements
-- [ ] References checked against publisher records
-- [ ] Figures at required resolution (>=300 dpi; current PNGs are 160 dpi,
-      regenerate at 300 dpi if the guide requires it)
-- [ ] Manuscript compiled without errors
+- [x] CRediT author contributions statement
+- [x] Declaration of competing interest
+- [x] Data availability statement with GitHub + Zenodo + USGS links
+- [x] Code availability statement
+- [x] Acknowledgements
+- [x] References checked against publisher records
+- [x] Figures at 300 dpi (matplotlib `figure.dpi=300`)
+- [x] Manuscript compiled without errors (22 pages)
 - [ ] `pytest` passes
 - [ ] Kaggle API token revoked/regenerated after release
+- [x] Round-2 response letter and PDF prepared
