@@ -169,8 +169,17 @@ def fig_scatter() -> None:
         ("persistence", "Persistence"),
         ("y_pred_calibrated", "Calibrated GRU"),
     ]
+    hexbin = None
     for ax, (column, title) in zip(axes, panels):
-        ax.scatter(frame["y_true"], frame[column], s=2, alpha=0.25, color="#2563eb")
+        hexbin = ax.hexbin(
+            frame["y_true"],
+            frame[column],
+            gridsize=45,
+            bins="log",
+            cmap="Blues",
+            mincnt=1,
+            linewidths=0.2,
+        )
         low = float(np.nanmin(frame["y_true"]))
         high = float(np.nanmax(frame["y_true"]))
         ax.plot([low, high], [low, high], color="black", linewidth=0.8)
@@ -178,7 +187,7 @@ def fig_scatter() -> None:
         ax.set_xlabel("Observed depth (ft)")
         ax.grid(alpha=0.2)
     axes[0].set_ylabel("Predicted depth (ft)")
-    fig.tight_layout()
+    fig.colorbar(hexbin, ax=axes, shrink=0.8, label="log$_{10}$(count)")
     fig.savefig(FIG_DIR / "fig4_scatter_h90.png")
     plt.close(fig)
 
@@ -270,6 +279,41 @@ def fig_missingness() -> None:
     plt.close(fig)
 
 
+def fig_outlier() -> None:
+    site = "413156098591201"
+    panel = pd.read_parquet(
+        PROJECT_ROOT / "data/processed/panel_core_clean.parquet"
+    )
+    group = panel[panel["site_no"].astype(str) == site].sort_values("date")
+
+    pred = pd.read_parquet(
+        PROJECT_ROOT
+        / "dist/kaggle_results_seeds/gru_h90_seed1/test_predictions.parquet"
+    )
+    pred = pred[pred["site_no"].astype(str) == site].sort_values("date")
+
+    fig, axes = plt.subplots(2, 1, figsize=(7.2, 5.2))
+    axes[0].plot(group["date"], group["value"], color="#111827", linewidth=0.8)
+    for stamp, label in (("2016-01-01", "validation"), ("2019-01-01", "test")):
+        axes[0].axvline(pd.Timestamp(stamp), color="#dc2626", linestyle="--", linewidth=0.7)
+        axes[0].text(pd.Timestamp(stamp), axes[0].get_ylim()[1], label, fontsize=7, va="top", ha="left", color="#dc2626")
+    axes[0].set_title(f"{site}: full observed record", fontsize=9, loc="left")
+    axes[0].set_ylabel("Depth to water (ft)")
+    axes[0].grid(alpha=0.2)
+
+    axes[1].plot(pred["date"], pred["y_true"], color="#111827", linewidth=0.9, label="observed")
+    axes[1].plot(pred["date"], pred["persistence"], color="#6b7280", linestyle="--", linewidth=0.8, label="persistence")
+    axes[1].plot(pred["date"], pred["y_pred_calibrated"], color="#2563eb", linewidth=0.9, label="calibrated GRU")
+    axes[1].set_title("90-day forecasts in available test period", fontsize=9, loc="left")
+    axes[1].set_ylabel("Depth to water (ft)")
+    axes[1].set_xlabel("Year")
+    axes[1].legend(fontsize=7, frameon=False)
+    axes[1].grid(alpha=0.2)
+    fig.tight_layout()
+    fig.savefig(FIG_DIR / "fig7_outlier.png")
+    plt.close(fig)
+
+
 def main() -> None:
     fig_study_map()
     fig_examples()
@@ -277,6 +321,7 @@ def main() -> None:
     fig_scatter()
     fig_alpha()
     fig_missingness()
+    fig_outlier()
     print(f"Wrote figures to {FIG_DIR}")
     for path in sorted(FIG_DIR.glob("*.png")):
         print(" ", path.name, f"{path.stat().st_size/1024:.0f} KB")
