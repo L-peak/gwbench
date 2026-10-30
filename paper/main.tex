@@ -765,8 +765,10 @@ persistence anchoring and validation calibration, not from external drivers.
 \label{sec:limitations}
 
 The benchmark covers three states and one parameter/statistic; the clean core
-has 74 wells. The calibration weight is fitted on a single validation period,
-and performance can degrade under distribution shift. USGS records contain
+has 74 wells. The calibration weight is fitted on a validation period that is
+also used for early stopping; the sensitivity analysis in Appendix Table~\ref{tab:calwindows}
+shows that median NSE and KGE are stable to the calibration window, while mean
+NSE is not. Performance can also degrade under distribution shift. USGS records contain
 datum and sensor changes that we flag and filter but do not physically correct.
 The univariate design and site-embedding limitation are discussed above and
 define the main directions for future work.
