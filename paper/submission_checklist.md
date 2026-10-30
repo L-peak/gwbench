@@ -2,9 +2,8 @@
 
 - [x] Author names, affiliation, email in `main.tex`
 - [x] Zenodo DOI filled in `main.tex`, `CITATION.cff`, and release notes
-- [x] GitHub repository public and release v0.1.x published
+- [x] GitHub repository public and release v0.2.0 published
 - [x] Kaggle dataset and notebooks public (`is_private=false`)
-- [x] Kaggle dataset/notebooks public
 - [x] `highlights.txt` prepared (3-5 bullets, <=85 characters each)
 - [x] Cover letter prepared
 - [ ] Graphical abstract (optional; check current C&G guide)
