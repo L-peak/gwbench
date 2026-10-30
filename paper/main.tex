@@ -237,8 +237,11 @@ filtering as the neural model.
 
 The main model is a two-layer GRU \citep{cho2014} shared across wells. Each
 input window spans 365 days and contains four channels: the normalized value,
-an observation mask, and day-of-year sine and cosine features. A learned site
-embedding is concatenated to every time step. The target is the residual from
+an observation mask, and day-of-year sine and cosine features. A learned
+8-dimensional site embedding is concatenated to every time step. The final GRU
+hidden state (last time step) is passed through layer normalization and a
+linear projection to produce one scalar residual prediction; no output
+activation is used (Table~\ref{tab:architecture}). The target is the residual from
 the last observed value in the window:
 \begin{equation}
   y_{\text{res}} = \frac{y_{t+h} - \mu_s}{\sigma_s}
@@ -268,7 +271,7 @@ is worse than persistence receives $\alpha_s=0$ and falls back to persistence.
 This step uses validation data only and is applied unchanged to all test
 periods and missingness levels. If a site has fewer than 30 validation pairs or
 zero predictor variance, $\alpha_s$ is set to zero. Because the validation
-period is also used for early stopping, Appendix~\ref{app:repro} refits
+period is also used for early stopping, Appendix~A refits
 $\alpha_s$ on 2016--2017 and 2018 only; median NSE and KGE are stable across
 windows, while mean NSE is calibration-sensitive.
 
@@ -294,9 +297,12 @@ metrics require at least 30 paired test anchors. Aggregate means and medians are
 are reported as mean $\pm$ standard deviation over seeds 1--3. For paired
 comparisons we first average each site's metric over seeds, then bootstrap
 wells 10{,}000 times with a fixed seed (20261029) and report percentile 95\%
-confidence intervals for the mean and median of the per-site difference. The
-median of the paired differences is not the difference of the two marginal
-medians, and we report the former when making inference.
+confidence intervals for the mean and median of the per-site difference. These
+intervals quantify between-well uncertainty conditional on the three evaluated
+training seeds; they do not fully characterize variability under different
+random initializations. Seed-level means and standard deviations are reported
+separately. The median of the paired differences is not the difference of the
+two marginal medians, and we report the former when making inference.
 
 For the missing-data stress test, we randomly hide 10\%, 30\%, or 50\% of the
 observed input values in the 365-day window at test time without retraining;
@@ -528,9 +534,14 @@ masking does not degrade performance at this horizon. The mask-to-mask
 standard deviation is at most 0.004 in mean NSE and 0.002 in mean KGE. The
 stride-7 protocol is used for computational tractability and is not directly
 comparable to the full test-set metrics in Table~\ref{tab:models}. The
-experiment removes isolated observations uniformly at random. As a second
-stress test, we removed one contiguous block of 30, 60, or 90 days from each
-input window (three mask seeds, stride 7, seed-1 model). At 30 days, mean NSE
+experiment removes isolated observations uniformly at random. The apparent
+improvement at 90 days under random point masking should not be interpreted as
+a beneficial effect of missing observations. One plausible mechanism is that
+masking attenuates the learned residual correction toward persistence,
+reducing errors at sites where the correction is less reliable; we did not test
+this mechanism directly. As a second stress test, we removed one contiguous
+block of 30, 60, or 90 days from each input window (three mask seeds, stride 7,
+seed-1 model). At 30 days, mean NSE
 falls from 0.637 to 0.626/0.619/0.613 for block lengths 30/60/90, median NSE
 is stable at 0.779, and mean KGE falls from 0.774 to 0.772/0.771/0.770. At 90
 days, mean NSE falls from $-0.031$ to $-0.076$/$-0.085$/$-0.091$, median NSE is
@@ -724,6 +735,10 @@ worsen, and 4 are unchanged; the mean is dominated by a few wells. We therefore
 recommend that benchmark users report the full distribution, not only a mean.
 The ridge comparison makes the point concrete: ridge has the better median at
 both horizons but far worse mean errors, so neither model dominates. The
+calibration-window sensitivity further shows that mean NSE ranges from $-0.449$
+to $-0.025$ across windows while median NSE and mean KGE remain within about
+0.05. Reported gains should therefore be interpreted as conditional on the
+selected calibration protocol, not as universally stable improvements. The
 calibrated GRU reduces the most severe failures relative to the raw GRU and
 ridge, but persistence remains the most conservative tail baseline; a benchmark
 that reports only one aggregate would conceal this trade-off.
@@ -737,6 +752,10 @@ validation-dependent procedure whose robustness should be checked.
 
 \subsection{Benchmark protocol and future models}
 
+Table~\ref{tab:benchmarkcompare} summarizes the distinction from representative
+groundwater ML studies: gwbench fixes the panel, target dates, anchors, and
+baseline ladder, and releases the configurations needed to reproduce each
+number. The comparison is qualitative and is not a systematic review.
 We recommend that future work on gwbench (i) use the temporal split; (ii)
 report persistence on the same anchors; (iii) report mean and median NSE/KGE,
 win rates, and confidence intervals; (iv) fit any calibration on validation
@@ -770,7 +789,10 @@ The benchmark covers three states and one parameter/statistic; the clean core
 has 74 wells. The calibration weight is fitted on a validation period that is
 also used for early stopping; the sensitivity analysis in Appendix Table~\ref{tab:calwindows}
 shows that median NSE and KGE are stable to the calibration window, while mean
-NSE is not. Performance can also degrade under distribution shift. USGS records contain
+NSE is not. Bootstrap intervals are conditional on seeds 1--3 and do not
+include initialization variance; seed-level standard deviations are reported
+separately, and more seeds would tighten this uncertainty. Performance can also
+degrade under distribution shift. USGS records contain
 datum and sensor changes that we flag and filter but do not physically correct.
 The univariate design and site-embedding limitation are discussed above and
 define the main directions for future work.
@@ -805,14 +827,14 @@ in groundwater ML.
 \begin{sloppypar}
 All raw observations are public USGS NWIS data \citep{usgs2026}. Code,
 experiment configurations, and figure-generation scripts are available at
-\url{\codeurl}. Processed panels and the release archive are archived at
-\href{https://doi.org/10.5281/zenodo.23749304}{\mbox{\texttt{10.5281/zenodo.23749304}}}.
-The 30-day, 90-day, and seed-study Kaggle notebooks are
-available at \url{\kaggleurl},
-\url{https://www.kaggle.com/code/kkksssaaalzy/gwbench-gru-h90}, and
-\url{https://www.kaggle.com/code/kkksssaaalzy/gwbench-seeds}; the public
-Kaggle dataset is available at
-\url{https://www.kaggle.com/datasets/kkksssaaalzy/gwbench-data}.
+\href{\codeurl}{\texttt{github.com/L-peak/gwbench}}. Processed panels and the
+release archive are archived at
+\href{https://doi.org/10.5281/zenodo.23749304}{\texttt{doi:10.5281/zenodo.23749304}}.
+The public Kaggle resources are the
+\href{\kaggleurl}{30-day notebook},
+\href{https://www.kaggle.com/code/kkksssaaalzy/gwbench-gru-h90}{90-day notebook},
+\href{https://www.kaggle.com/code/kkksssaaalzy/gwbench-seeds}{seed-study notebook},
+and \href{https://www.kaggle.com/datasets/kkksssaaalzy/gwbench-data}{benchmark dataset}.
 \end{sloppypar}
 
 \section*{CRediT authorship contribution statement}
@@ -899,13 +921,70 @@ Full 2016--2018 & 76{,}493/72{,}462 & 0.661/0.698 & 0.587/$-0.244$ & 0.768/0.210
 \end{tabular}}
 \end{table}
 
+\begin{table}[t]
+\centering
+\caption{GRU architecture. Parameter count is for the 74-site clean core
+(51{,}537 trainable parameters).}
+\label{tab:architecture}
+\begin{tabular}{ll}
+\toprule
+Component & Specification \\
+\midrule
+Input window & 365 days $\times$ 4 channels \\
+Site embedding & 8 dimensions, concatenated at every time step \\
+Input projection & Linear(12 $\rightarrow$ 64) + ReLU \\
+Recurrent layers & 2-layer GRU, hidden size 64, dropout 0.2 \\
+Output head & LayerNorm(64) + Linear(64 $\rightarrow$ 1) \\
+Output & one scalar residual, no activation \\
+Optimizer / loss & Adam ($10^{-3}$) / MSE, gradient clipping 1.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Qualitative positioning relative to representative groundwater-level
+ML studies and reviews. The right column describes gwbench; the middle column
+summarizes common practice, not every study.}
+\label{tab:benchmarkcompare}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{p{0.22\linewidth}p{0.34\linewidth}p{0.34\linewidth}}
+\toprule
+Dimension & Representative groundwater ML studies & gwbench \\
+\midrule
+Data scope & Often one well, a small cluster, or a regional network
+\citep{wunsch2021,heudorfer2024} & 279 public USGS wells in three states,
+with 89-well and 74-well panels \\
+Temporal validation & Study-specific; random or weakly separated splits are
+common \citep{khan2023,boo2024} & Purged train/validation/test split by target
+date \\
+Baselines & Persistence and simple regression are inconsistently reported
+\citep{rajaee2019,khan2023} & Persistence, seasonal naive, and per-site ridge on
+identical anchors \\
+Calibration & Site-specific blending is rarely isolated & Fixed versus per-site
+validation-fitted blending ablation \\
+Reporting & Aggregate metrics are common & Mean/median, per-site bootstrap,
+tail counts, missingness, and cross-panel sensitivity \\
+Reproducibility & Variable & Code, processed panels, configurations, Kaggle
+notebooks, and DOI \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
 \paragraph{Statistical protocol}
 Per-site metrics are computed only for wells with at least 30 paired test
 anchors. Aggregate means and medians are taken over wells; neural results are
 reported as mean $\pm$ standard deviation over training seeds. Paired
 confidence intervals resample wells with replacement 10{,}000 times using
 NumPy's \texttt{default\_rng} with seed 20261029; the reported interval is the
-2.5th--97.5th percentile of the bootstrap distribution. The missing-data
+2.5th--97.5th percentile of the bootstrap distribution. As a sensitivity
+check, a hierarchical bootstrap that resamples both training seeds and wells
+gives 30-day mean/median $\Delta$NSE $+0.014$ (95\% CI $-0.026$ to $0.047$)
+and $+0.010$ ($0.004$ to $0.022$), and 90-day mean/median $\Delta$NSE $-0.027$
+($-0.306$ to $0.192$) and $+0.100$ ($0.057$ to $0.166$). These intervals are
+consistent with the seed-conditional results; with only three seeds the seed
+dimension is coarse, so the site bootstrap remains the primary inference. The
+missing-data
 experiment repeats each masking fraction with five mask seeds on a stride-7
 test subset and reports mean $\pm$ standard deviation across draws.
 
