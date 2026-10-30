@@ -56,9 +56,11 @@ median NSE and KGE than the GRU at both horizons but has heavier mean-error
 tails; the calibrated GRU avoids the most severe failures of the raw GRU and
 ridge, although persistence remains the most conservative tail baseline. We do
 not claim that the GRU is more robust in other regions or on unseen wells.
-Missing-input stress tests are asymmetric: at 30 days, 50\% masking pushes mean
-NSE below persistence, whereas at 90 days masking does not degrade performance.
-We therefore do not claim general robustness to real missing-data mechanisms.
+Missing-input stress tests are asymmetric: at 30 days, 50\% random point
+masking pushes mean NSE below persistence, whereas at 90 days the same
+point-masking protocol does not degrade performance; a contiguous-block test
+is reported separately. We therefore do not claim general robustness to real
+missing-data mechanisms.
 The benchmark,
 code, and experiment configurations are released to support reproducible
 comparison.
