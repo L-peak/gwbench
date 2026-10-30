@@ -76,8 +76,10 @@ forecasting \sep reproducibility
 Groundwater is a primary water source for agriculture, ecosystems, and
 municipal supply, and water-level observations are among the most direct
 indicators of aquifer stress. Machine-learning (ML) models are now widely used
-to forecast groundwater levels, often with recurrent or attention-based
-architectures \citep{hochreiter1997,cho2014,kratzert2019,shen2018,khan2023,dey2025}. Reported
+to forecast groundwater levels, often with recurrent architectures such as
+LSTM \citep{hochreiter1997} and GRU \citep{cho2014}, or regional large-sample
+models \citep{kratzert2019}; recent reviews document the breadth of the field
+\citep{shen2018,khan2023,dey2025}. Reported
 gains, however, are hard to compare: studies differ in well selection,
 train/test splitting, forecast horizon, and---critically---the strength of the
 baseline. Random train/test splits can leak information across nearby dates,
@@ -89,15 +91,18 @@ vector regression, random forests, LSTMs, GRUs, and hybrid decomposition
 methods, usually for one well or a small cluster
 \citep{khan2023,dey2025}. Direct comparisons of LSTM, CNN, and NARX models on
 monitoring wells have improved practice, but remain regional and rarely report
-a persistence baseline on identical anchors \citep{wunsch2021}. Reviews
-emphasize that reported accuracy is strongly study-specific and that
+a persistence baseline on identical anchors \citep{wunsch2021}. Global
+entity-aware groundwater models have also been explored, but their evaluation
+remains sensitive to entity definitions and split design \citep{heudorfer2024}.
+Reviews emphasize that reported accuracy is strongly study-specific and that
 preprocessing, split design, and baseline choice are rarely standardized
 \citep{rajaee2019,khan2023,shen2018}. Temporal autocorrelation also makes
 random or weakly separated splits optimistic, a problem well known in
-ecological and hydrological cross-validation \citep{roberts2017}. In
-surface-water hydrology, large-sample benchmarks and regional LSTMs have shown
-that a common dataset and split can change conclusions about model skill
-\citep{addor2017,kratzert2019,reichstein2019}. We are not aware of a comparable
+ecological and hydrological cross-validation
+\citep{roberts2017,bergmeir2012}. In surface-water hydrology, large-sample
+benchmarks and regional LSTMs have shown that a common dataset and split can
+change conclusions about model skill
+\citep{addor2017,kratzert2019,reichstein2019,nearing2021}. We are not aware of a comparable
 open, multi-well daily groundwater benchmark with fixed splits, explicit
 missingness, and a persistence baseline. This paper provides such a benchmark
 for three U.S. states and one widely measured parameter, and uses it to
@@ -260,7 +265,10 @@ The closed-form least-squares solution is clipped to $[0,1]$; a site whose GRU
 is worse than persistence receives $\alpha_s=0$ and falls back to persistence.
 This step uses validation data only and is applied unchanged to all test
 periods and missingness levels. If a site has fewer than 30 validation pairs or
-zero predictor variance, $\alpha_s$ is set to zero.
+zero predictor variance, $\alpha_s$ is set to zero. Because the validation
+period is also used for early stopping, Appendix~\ref{app:repro} refits
+$\alpha_s$ on 2016--2017 and 2018 only; median NSE and KGE are stable across
+windows, while mean NSE is calibration-sensitive.
 
 \subsection{Fusion ablation}
 
@@ -463,7 +471,11 @@ yields mean NSE $-4.661$ and median NSE 0.070, far below the per-site result
 that dominate the mean without also shrinking the correction on wells where the
 GRU is useful. The ablation therefore isolates site-specific calibration, not
 the GRU alone or blending in general, as the ingredient that makes the residual
-model work.
+model work. Refitting $\alpha_s$ on 2016--2017 or 2018 only leaves median NSE
+and mean KGE within about 0.05, but 90-day mean NSE ranges from $-0.449$ to
+$-0.025$ (Appendix Table~\ref{tab:calwindows}); mean NSE is therefore sensitive
+to the calibration window as well as to the outlier, while the median/KGE
+conclusions are stable.
 
 \begin{table}[t]
 \centering
@@ -514,11 +526,17 @@ masking does not degrade performance at this horizon. The mask-to-mask
 standard deviation is at most 0.004 in mean NSE and 0.002 in mean KGE. The
 stride-7 protocol is used for computational tractability and is not directly
 comparable to the full test-set metrics in Table~\ref{tab:models}. The
-experiment removes isolated observations uniformly at random. Real groundwater
-gaps are often multi-week and associated with instrument failure, maintenance,
-or extreme weather; the results therefore describe robustness to scattered
-missing inputs, not to every missing-data mechanism. A continuous-gap stress
-test is left for future work.
+experiment removes isolated observations uniformly at random. As a second
+stress test, we removed one contiguous block of 30, 60, or 90 days from each
+input window (three mask seeds, stride 7, seed-1 model). At 30 days, mean NSE
+falls from 0.637 to 0.626/0.619/0.613 for block lengths 30/60/90, median NSE
+is stable at 0.779, and mean KGE falls from 0.774 to 0.772/0.771/0.770. At 90
+days, mean NSE falls from $-0.031$ to $-0.076$/$-0.085$/$-0.091$, median NSE is
+0.123/0.163/0.197, and mean KGE remains 0.536--0.537; all 90-day means remain
+well above persistence ($-0.221$). Contiguous blocks are therefore less
+damaging than 50\% random point masking at 30 days, but still degrade mean NSE
+at 90 days. Real groundwater gaps can contain multiple blocks or instrument
+outages; neither experiment covers all operational missingness mechanisms.
 
 \begin{table}[t]
 \centering
@@ -570,15 +588,18 @@ mixed: California and Nebraska have slightly lower mean NSE but higher mean KGE
 (0.437 vs 0.379 and 0.556 vs 0.479), while Texas has higher NSE but slightly
 lower KGE (0.776 vs 0.789). At 30 days the model is essentially tied with
 persistence in California and Texas and has a lower mean KGE in Nebraska. The
-aggregate result is therefore not driven by a single state, but the gains are
-heterogeneous; future benchmark reports should include state or aquifer
-strata.
+state-level results suggest substantial geographic heterogeneity, but the
+small number of Texas wells ($N=5$) limits the strength of state-specific
+conclusions; we interpret them as descriptive rather than as evidence of
+general regional performance. Future benchmark reports should include state or
+aquifer strata with larger samples.
 
 \begin{table}[t]
 \centering
 \caption{Seed-averaged per-site skill by state. Values are means across wells;
 model = calibrated GRU, pers = persistence. $N$ is the number of wells at 30/90
-days.}
+days. The Texas sample has only five wells; state-level differences are
+descriptive and should not be generalized.}
 \label{tab:states}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{lrrrrrr}
@@ -767,12 +788,13 @@ severe failures of the raw GRU and ridge, although persistence remains the most
 conservative tail baseline and we do not claim broader robustness. The
 uncalibrated GRU fails
 catastrophically on low-variance wells, and the site-specific validation-fitted
-weight is essential; a global weight does not reproduce the gain. The model is
-Missing-input behavior is horizon-dependent: at 30 days, 50\% masking pushes
-mean NSE below persistence, whereas at 90 days masking does not degrade
-performance. We therefore do not claim general robustness to real missing-data
-mechanisms. We hope the benchmark encourages stronger baselines, purged
-temporal splits, and per-site reporting in groundwater ML.
+weight is essential; a global weight does not reproduce the gain. Missing-input
+behavior is horizon-dependent: at 30 days, 50\% random masking pushes mean NSE
+below persistence, whereas at 90 days no systematic degradation is observed
+under the tested point-masking protocol. We therefore do not claim robustness
+to temporally clustered or operational missingness. We hope the benchmark
+encourages stronger baselines, purged temporal splits, and per-site reporting
+in groundwater ML.
 
 \section*{Data and code availability}
 
@@ -811,7 +833,7 @@ database and Kaggle for providing GPU resources used in the experiments.
 \section{Reproducibility details}
 \label{app:repro}
 
-\paragraph{Data retrieval.}
+\paragraph{Data retrieval}
 Daily values were retrieved in October 2026 from the USGS Water Data OGC API
 (collections \texttt{field-measurements} and \texttt{daily}; parameter code
 72019, statistic code 00001) with the legacy daily-values service as a batched
@@ -821,9 +843,11 @@ observations, a first-to-last span of at least 10 years, and a record extending
 to at least 2015. Sentinel values of the form 100000.x were removed; day-to-day
 jumps larger than 5 ft were flagged, and wells with more than five such jumps
 were excluded from the clean core. The full, screened-core, and clean-core
-panels contain 279, 89, and 74 wells (Table~\ref{tab:panels}).
+panels contain 279, 89, and 74 wells (Table~\ref{tab:panels}). A per-well
+manifest with state, coverage, jump count, gap statistics, and panel
+membership is provided as \texttt{docs/site\_manifest.csv} in the repository.
 
-\paragraph{Model and training.}
+\paragraph{Model and training}
 The GRU has two layers, hidden size 64, dropout 0.2, and a learned site
 embedding of the same dimension. Each input window is 365 days with four
 channels (site-normalized value, observation mask, sine and cosine of
@@ -836,13 +860,42 @@ Equation~(1), so a zero output reproduces persistence. The 30- and 90-day
 models are trained separately with seeds 1, 2, and 3. The same split and panel
 are used for all seeds.
 
-\paragraph{Calibration.}
+\paragraph{Calibration}
 For each well, $\alpha_s$ is the clipped least-squares slope of the validation
 target error on the GRU-minus-persistence difference, fitted only on validation
 anchors with at least 30 paired predictions. The fitted weight is then applied
 unchanged to all test anchors and missingness levels.
 
-\paragraph{Statistical protocol.}
+\paragraph{Calibration-window sensitivity}
+The validation period is also used for early stopping. To test whether the
+fitted weights are sensitive to this dual use, we refit $\alpha_s$ on
+2016--2017, on 2018 only, and on the full 2016--2018 period (Table~\ref{tab:calwindows}).
+The per-site weights are correlated across windows (full versus early
+0.88--0.96; full versus 2018 0.69--0.82). Median NSE and mean KGE change by at
+most 0.05 across windows, whereas 90-day mean NSE ranges from $-0.449$ to
+$-0.025$. This reinforces the paper's choice of median NSE and KGE as robust
+endpoints and shows that mean NSE is sensitive to the calibration window as
+well as to the outlier.
+
+\begin{table}[t]
+\centering
+\caption{Calibration-window sensitivity (mean across seeds 1--3). $N$ is the
+number of validation anchors at 30/90 days. The full window is used for the
+main results; the early and 2018-only windows are sensitivity checks.}
+\label{tab:calwindows}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrrr}
+\toprule
+Window & $N$ (30/90) & $\alpha$ median (30/90) & NSE mean (30/90) & NSE median (30/90) & KGE mean (30/90) \\
+\midrule
+2016--2017 & 50{,}110/46{,}079 & 0.695/0.773 & 0.551/$-0.449$ & 0.770/0.196 & 0.761/0.516 \\
+2018 only & 26{,}383/26{,}383 & 0.517/0.544 & 0.614/$-0.025$ & 0.775/0.261 & 0.776/0.532 \\
+Full 2016--2018 & 76{,}493/72{,}462 & 0.661/0.698 & 0.587/$-0.244$ & 0.768/0.210 & 0.766/0.519 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\paragraph{Statistical protocol}
 Per-site metrics are computed only for wells with at least 30 paired test
 anchors. Aggregate means and medians are taken over wells; neural results are
 reported as mean $\pm$ standard deviation over training seeds. Paired
@@ -852,7 +905,7 @@ NumPy's \texttt{default\_rng} with seed 20261029; the reported interval is the
 experiment repeats each masking fraction with five mask seeds on a stride-7
 test subset and reports mean $\pm$ standard deviation across draws.
 
-\paragraph{Software.}
+\paragraph{Software}
 Experiments were run in the Kaggle notebook environment with GPU acceleration;
 the missing-data stress tests and figure generation were also reproduced on
 CPU. The repository's \texttt{requirements.txt} lists the analysis

@@ -167,6 +167,7 @@ class WindowDataset(Dataset):
         add_time_features: bool = True,
         residual: bool = False,
         mask_fraction: float = 0.0,
+        mask_block_length: int = 0,
         mask_seed: int = 0,
     ) -> None:
         self.arrays = arrays
@@ -178,7 +179,10 @@ class WindowDataset(Dataset):
         self.add_time_features = add_time_features
         self.residual = residual
         self.mask_fraction = mask_fraction
+        self.mask_block_length = mask_block_length
         self.mask_seed = mask_seed
+        if mask_block_length < 0 or mask_block_length > lookback:
+            raise ValueError("mask_block_length must be in [0, lookback]")
 
     def __len__(self) -> int:
         return len(self.anchors)
@@ -193,7 +197,14 @@ class WindowDataset(Dataset):
         mean = float(self.means[site])
         std = float(self.stds[site])
 
-        if self.mask_fraction > 0 and observed_mask.any():
+        if self.mask_block_length > 0 and observed_mask.any():
+            block = min(self.mask_block_length, self.lookback)
+            rng = np.random.default_rng(self.mask_seed + index)
+            block_start = int(rng.integers(0, self.lookback - block + 1))
+            hide = np.arange(block_start, block_start + block)
+            input_mask = observed_mask.copy()
+            input_mask[hide] = False
+        elif self.mask_fraction > 0 and observed_mask.any():
             observed_indices = np.flatnonzero(observed_mask)
             n_hide = int(round(self.mask_fraction * len(observed_indices)))
             if n_hide > 0:

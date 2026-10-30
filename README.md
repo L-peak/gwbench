@@ -148,6 +148,10 @@ The full download contains 1,581,853 observed daily values from 2000-2024
 across California, Nebraska, and Texas. Sentinel values (100000.x) were removed
 before panel construction.
 
+See `docs/BENCHMARK.md` for the full protocol, data dictionary, QC flow, and
+reproduction commands, and `docs/site_manifest.csv` for the per-well manifest
+(state, coverage, jumps, gaps, and panel membership).
+
 ## Final benchmark results (clean core, seeds 1-3)
 
 | Horizon | Model | NSE mean | NSE median | KGE mean | KGE median |
@@ -299,9 +303,13 @@ randomly hidden (no retraining), using five mask seeds:
 
 The stress test uses every 7th test anchor, so the absolute values differ
 from the full test-set metrics. The response is horizon-dependent: the 30-day
-model degrades at 50% masking and falls slightly below persistence, while the
-90-day model does not degrade. The experiment removes isolated observations at
-random; real multi-week gaps are a separate stress test.
+model degrades at 50% point masking and falls slightly below persistence, while
+the 90-day model does not degrade. A separate contiguous-block test removes
+one 30/60/90-day block per input window: at 30 days mean NSE falls from 0.637
+to 0.613 at a 90-day block (median stays near 0.779); at 90 days mean NSE
+falls from -0.031 to -0.091 but remains above persistence (-0.221), and KGE is
+stable. The random-masking experiment is not a substitute for real multi-week
+operational gaps.
 
 - One well (`315712106361803`) has 1,095 day-to-day jumps > 5 ft, consistent
   with pumping or a noisy sensor. It should be excluded or analyzed separately.

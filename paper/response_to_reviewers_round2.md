@@ -63,6 +63,26 @@ mean NSE is slightly worse than persistence, not slightly better.
 The boundary-overlap limitation has been removed from the manuscript and
 replaced by the purged protocol in Section 3.1 and Appendix A.
 
+## P0. Validation dual use: early stopping and calibration
+
+We agree that using the same validation period for early stopping and for
+fitting alpha_s can make calibration look better than it is. The main results
+retain the full 2016-2018 validation period, but we added a calibration-window
+sensitivity experiment (Appendix Table A.8):
+
+- alpha_s fitted on 2016-2017, on 2018 only, or on the full 2016-2018 period;
+- per-site alpha correlations with the full window are 0.88-0.96 for
+  2016-2017 and 0.69-0.82 for 2018 only;
+- across windows, median NSE and mean KGE change by at most 0.05, while
+  90-day mean NSE ranges from -0.449 (2016-2017) to -0.025 (2018 only).
+
+This shows that the median/KGE conclusions are stable to the calibration
+window, while mean NSE is calibration-sensitive as well as outlier-sensitive.
+We therefore keep median NSE and KGE as the robust endpoints and report the
+mean explicitly. A fully independent early-stop/calibration split would
+require retraining; the sensitivity experiment quantifies the risk without
+hiding it, and the manuscript states this limitation.
+
 ## P0.1 Unified statistical claims and abstract
 
 The abstract, Results, Discussion, and Conclusions now use the same endpoint
@@ -113,10 +133,17 @@ are mean +/- standard deviation across mask draws.
 - The mask-to-mask standard deviation is at most 0.004 in mean NSE and 0.002
   in mean KGE.
 
-The table caption states that the stress test uses the seed-1 model and that
-the stride-7 subset is not directly comparable to the full test set. The text
-also distinguishes random isolated masking from real multi-week gaps; we do
-not claim robustness to all missing-data mechanisms.
+We also added a contiguous-block stress test: one 30-, 60-, or 90-day block is
+removed from each input window (three mask seeds, stride 7, seed-1 model). At
+30 days, mean NSE falls from 0.637 to 0.626/0.619/0.613 and median NSE stays
+near 0.779; at 90 days, mean NSE falls from -0.031 to
+-0.076/-0.085/-0.091 while mean KGE stays near 0.536 and all means remain
+above persistence (-0.221). This test is less damaging than 50% random point
+masking at 30 days but still degrades 90-day mean NSE. The table caption states
+that the stress test uses the seed-1 model and that the stride-7 subset is not
+directly comparable to the full test set. The text distinguishes random
+isolated masking, contiguous blocks, and real multi-week operational gaps; we
+do not claim robustness to all missing-data mechanisms.
 
 ## P0.3 Baselines and fusion ablation
 

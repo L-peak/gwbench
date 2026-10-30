@@ -17,6 +17,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--horizons", default="30,90")
     parser.add_argument("--prefix", default="missing")
+    parser.add_argument("--group-column", default="mask_fraction")
     parser.add_argument("--out", default="data/processed/missing_summary.csv")
     return parser.parse_args()
 
@@ -34,7 +35,7 @@ def main() -> None:
             print(f"no files for horizon {horizon}")
             continue
         data = pd.concat([pd.read_csv(path) for path in paths], ignore_index=True)
-        grouped = data.groupby("mask_fraction").agg(
+        grouped = data.groupby(args.group_column).agg(
             n_seeds=("y_pred_nse_mean", "size"),
             nse_mean=("y_pred_nse_mean", "mean"),
             nse_mean_std=("y_pred_nse_mean", "std"),

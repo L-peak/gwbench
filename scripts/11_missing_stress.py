@@ -43,6 +43,11 @@ def parse_args() -> argparse.Namespace:
         help="Directory containing best_model.pt, config.json, and optional alphas",
     )
     parser.add_argument("--fractions", default="0,0.1,0.3,0.5")
+    parser.add_argument(
+        "--block-lengths",
+        default="",
+        help="Comma-separated contiguous missing blocks (days); overrides fractions",
+    )
     parser.add_argument("--batch-size", type=int, default=512)
     parser.add_argument(
         "--stride",
@@ -121,9 +126,17 @@ def main() -> None:
         print(f"Loaded blending weights: {len(alphas)} sites")
 
     fractions = [float(value) for value in args.fractions.split(",") if value.strip()]
+    block_lengths = [
+        int(value) for value in args.block_lengths.split(",") if value.strip()
+    ]
+    conditions = (
+        [("block", value) for value in block_lengths]
+        if block_lengths
+        else [("fraction", value) for value in fractions]
+    )
     rows: list[dict] = []
 
-    for fraction in fractions:
+    for kind, value in conditions:
         dataset = WindowDataset(
             arrays,
             test_anchors,
@@ -132,7 +145,8 @@ def main() -> None:
             means=means,
             stds=stds,
             residual=residual,
-            mask_fraction=fraction,
+            mask_fraction=value if kind == "fraction" else 0.0,
+            mask_block_length=value if kind == "block" else 0,
             mask_seed=args.mask_seed,
         )
         loader = DataLoader(
@@ -158,10 +172,11 @@ def main() -> None:
 
         per_site, aggregate = evaluate_prediction_frame(frame)
         aggregate = dict(aggregate)
-        aggregate["mask_fraction"] = fraction
+        aggregate["mask_fraction"] = value if kind == "fraction" else 0.0
+        aggregate["mask_block_length"] = value if kind == "block" else 0
         rows.append(aggregate)
         print(
-            f"fraction={fraction:.2f} n_sites={aggregate.get('n_sites')} "
+            f"{kind}={value} n_sites={aggregate.get('n_sites')} "
             f"nse_mean={aggregate.get('y_pred_nse_mean'):.4f} "
             f"nse_median={aggregate.get('y_pred_nse_median'):.4f} "
             f"kge_mean={aggregate.get('y_pred_kge_mean'):.4f}"
