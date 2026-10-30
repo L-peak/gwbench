@@ -94,7 +94,7 @@ the 74-well clean core explicit.
 - The missing-data table caption and the first sentence of Section 4.6 state
   that the results use a stride-7 subset and are not directly comparable to
   Table 3.
-- The Zenodo DOI is displayed as `10.5281/zenodo.23749304` without a line break.
+- The Zenodo DOI is displayed as `10.5281/zenodo.23749303` without a line break.
 - Two recent references were added and all DOIs were checked.
 
 ## Reviewer 2

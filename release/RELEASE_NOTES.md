@@ -1,4 +1,4 @@
-# gwbench v0.1.0 release notes
+# gwbench v0.2.0 release notes
 
 This release accompanies the manuscript:
 
@@ -62,4 +62,4 @@ The exact Kaggle configuration used for the paper is in
 
 Code: MIT (see `LICENSE`). Derived panels: CC BY 4.0. Raw USGS data: public
 domain. If you use this release, cite the manuscript and the Zenodo DOI:
-https://doi.org/10.5281/zenodo.23749304
+https://doi.org/10.5281/zenodo.23749303

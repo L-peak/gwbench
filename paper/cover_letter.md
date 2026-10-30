@@ -33,7 +33,7 @@ software contribution rather than another architecture paper: it provides an
 open pipeline, purged temporal splits, quality-control code, and an
 honest negative result about short-horizon deep learning. The code and
 processed data are available at https://github.com/L-peak/gwbench and archived
-at https://doi.org/10.5281/zenodo.23749304. Raw observations are public USGS
+at https://doi.org/10.5281/zenodo.23749303. Raw observations are public USGS
 data.
 
 The manuscript is original, is not under consideration elsewhere, and all

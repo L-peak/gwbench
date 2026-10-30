@@ -7,11 +7,11 @@ authors:
     given-names: Zhaoyang
     affiliation: "Henan Polytechnic University"
     email: 3286533389@qq.com
-version: 0.1.0
-date-released: 2026-10-29
+version: 0.2.0
+date-released: 2026-10-30
 license: MIT
 repository-code: "https://github.com/L-peak/gwbench"
-doi: "10.5281/zenodo.23749304"
+doi: "10.5281/zenodo.23749303"
 keywords:
   - groundwater
   - machine learning

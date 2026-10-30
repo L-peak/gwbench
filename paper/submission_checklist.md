@@ -18,7 +18,7 @@
 - [x] Manuscript compiled without errors (27 pages)
 - [x] `pytest` passes (13 tests)
 - [ ] Kaggle API token revoked/regenerated after release
-- [ ] Zenodo archive updated with the final revision (current DOI is v0.1.0)
+- [x] Zenodo archive updated: v0.2.0, DOI 10.5281/zenodo.23807111 (concept 23749303)
 - [ ] Check Elsevier generative-AI disclosure requirement
 - [x] Round-2 response letter and PDF prepared
 - [x] Purged split and retrained models; leakage sensitivity resolved
