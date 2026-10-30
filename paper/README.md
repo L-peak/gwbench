@@ -11,9 +11,10 @@ pdflatex main.tex
 pdflatex main.tex
 ```
 
-The compiled manuscript is `main.pdf`; `main_round2.pdf` is the round-2
-review revision. The response letter for the second review is
-`response_to_reviewers_round2.pdf`.
+The compiled manuscript is `main.pdf` (25 pages); `main_round2.pdf` is the
+matching round-2 revision. The response letter for the second review is
+`response_to_reviewers_round2.pdf`. The benchmark protocol and per-well
+manifest are in `../docs/BENCHMARK.md` and `../docs/site_manifest.csv`.
 
 ## Revision files
 
