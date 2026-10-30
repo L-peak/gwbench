@@ -37,32 +37,25 @@
 Groundwater-level forecasting is increasingly tackled with deep learning, but
 reported gains are difficult to compare because studies use different wells,
 splits, horizons, and baselines. We present \texttt{gwbench}, a reproducible
-benchmark built from public USGS National Water Information System daily
-depth-to-water records for 279 wells in California, Nebraska, and Texas
-(2000--2024), with a 74-well clean core and purged temporal splits. We
-evaluate persistence, seasonal naive, per-site ridge regression, and a global
-residual GRU. Persistence is extremely strong at short horizons (mean NSE 0.97
-at one day). At 30 days the calibrated residual GRU is statistically tied with
-persistence on mean NSE (95\% CI for $\Delta$NSE includes zero), and a fixed
-global blending weight is worse than persistence in mean NSE, showing that
-site-specific calibration---not blending alone---is essential. At 90 days the
-calibrated model improves median NSE relative to persistence from $-0.18$ to
-$0.21$ (paired median $\Delta$NSE $+0.11$, 95\% CI 0.05--0.22) and mean KGE
-from 0.46 to 0.52 (95\% CI 0.01--0.11); mean NSE is $-0.24$ versus $-0.22$ and
-its confidence interval includes zero, because one distribution-shift well
-dominates the mean. We therefore treat the 90-day median NSE and KGE as the
-robust endpoints. A per-site ridge baseline attains higher
-median NSE and KGE than the GRU at both horizons but has heavier mean-error
-tails; the calibrated GRU avoids the most severe failures of the raw GRU and
-ridge, although persistence remains the most conservative tail baseline. We do
-not claim that the GRU is more robust in other regions or on unseen wells.
-Missing-input stress tests are asymmetric: at 30 days, 50\% random point
-masking pushes mean NSE below persistence, whereas at 90 days the same
-point-masking protocol does not degrade performance; a contiguous-block test
-is reported separately. We therefore do not claim general robustness to real
-missing-data mechanisms.
-The benchmark,
-code, and experiment configurations are released to support reproducible
+benchmark built from public USGS daily depth-to-water records for 279 wells in
+California, Nebraska, and Texas (2000--2024), with a 74-well clean core and
+purged temporal splits. We compare persistence, seasonal naive, per-site
+ridge, and a residual GRU. Persistence is strong at short
+horizons (mean NSE 0.97 at one day). At 30 days the calibrated GRU is
+statistically tied with persistence on mean NSE, and a fixed global blending
+weight is worse than persistence in mean NSE, showing that site-specific
+calibration---not blending alone---is essential. At 90 days the calibrated
+model improves median NSE relative to persistence from $-0.18$ to $0.21$
+(paired median $\Delta$NSE $+0.11$, 95\% CI 0.05--0.22) and mean KGE from 0.46
+to 0.52 (95\% CI 0.01--0.11); mean NSE is $-0.24$ versus $-0.22$ and its
+interval includes zero because one distribution-shift well dominates. A
+per-site ridge baseline has higher median NSE and KGE than the GRU but much
+heavier mean-error tails; the calibrated GRU reduces the most severe failures
+of the raw GRU and ridge, but persistence remains the most conservative tail
+baseline. We do not claim broader robustness. Missing-input stress tests are
+asymmetric: 50\% random point masking pushes 30-day mean NSE below
+persistence, whereas 90-day performance does not degrade under the same
+protocol. Code and configurations are released for reproducible
 comparison.
 \end{abstract}
 
