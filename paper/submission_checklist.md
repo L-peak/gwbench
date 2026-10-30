@@ -3,6 +3,7 @@
 - [x] Author names, affiliation, email in `main.tex`
 - [x] Zenodo DOI filled in `main.tex`, `CITATION.cff`, and release notes
 - [x] GitHub repository public and release v0.1.x published
+- [x] Kaggle dataset and notebooks public (`is_private=false`)
 - [x] Kaggle dataset/notebooks public
 - [x] `highlights.txt` prepared (3-5 bullets, <=85 characters each)
 - [x] Cover letter prepared
@@ -17,6 +18,8 @@
 - [x] Manuscript compiled without errors (27 pages)
 - [x] `pytest` passes (13 tests)
 - [ ] Kaggle API token revoked/regenerated after release
+- [ ] Zenodo archive updated with the final revision (current DOI is v0.1.0)
+- [ ] Check Elsevier generative-AI disclosure requirement
 - [x] Round-2 response letter and PDF prepared
 - [x] Purged split and retrained models; leakage sensitivity resolved
 - [x] Calibration-window sensitivity and contiguous-block missingness added
