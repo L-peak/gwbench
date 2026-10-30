@@ -123,6 +123,7 @@ anchors; the 90-day model uses 114,941 and 72,462. Test anchors: 103,956
 | `data/processed/missing_summary_purged.csv` | random point-masking summary |
 | `data/processed/missing_summary_block.csv` | contiguous-block masking summary |
 | `data/processed/calibration_windows/` | calibration-window sensitivity |
+| `docs/hierarchical_bootstrap.csv` | seed-and-well hierarchical bootstrap |
 | `paper/figures/` | manuscript figures 1-8 |
 
 ## 7. Reproduce the tables and figures
