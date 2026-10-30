@@ -57,6 +57,23 @@ core (89 wells) / clean core (74 wells)
 Jumps are flagged, not silently corrected, because they may reflect real
 datum or sensor changes. The per-well manifest is `docs/site_manifest.csv`.
 
+Manifest columns:
+
+| Column | Meaning |
+|---|---|
+| `site_no` | USGS site identifier |
+| `state_cd` | CA, NE, or TX |
+| `n_days` | days in the complete panel |
+| `n_observed` | observed daily values |
+| `coverage` | observed fraction |
+| `n_jumps` | day-to-day jumps > 5 ft with gap <= 2 days |
+| `max_abs_jump` | largest absolute day-to-day change |
+| `n_gaps_gt_7d` | number of gaps longer than 7 days |
+| `longest_gap_days` | longest gap |
+| `value_min`, `value_max`, `value_std` | observed value range and standard deviation |
+| `in_full`, `in_core`, `in_clean` | panel membership flags |
+| `exclusion_reason` | reason for exclusion from core/clean core |
+
 ## 4. Anchor protocol
 
 - input window: 365 days;
